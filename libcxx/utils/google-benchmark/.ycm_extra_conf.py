@@ -5,21 +5,25 @@ import ycm_core
 # compilation database set (by default, one is not set).
 # CHANGE THIS LIST OF FLAGS. YES, THIS IS THE DROID YOU HAVE BEEN LOOKING FOR.
 flags = [
-    '-Wall',
-    '-Werror',
-    '-pedantic-errors',
-    '-std=c++0x',
-    '-fno-strict-aliasing',
-    '-O3',
-    '-DNDEBUG',
+    "-Wall",
+    "-Werror",
+    "-pedantic-errors",
+    "-std=c++0x",
+    "-fno-strict-aliasing",
+    "-O3",
+    "-DNDEBUG",
     # ...and the same thing goes for the magic -x option which specifies the
     # language that the files to be compiled are written in. This is mostly
     # relevant for c++ headers.
     # For a C project, you would set this to 'c' instead of 'c++'.
-    '-x', 'c++',
-    '-I', 'include',
-    '-isystem', '/usr/include',
-    '-isystem', '/usr/local/include',
+    "-x",
+    "c++",
+    "-I",
+    "include",
+    "-isystem",
+    "/usr/include",
+    "-isystem",
+    "/usr/local/include",
 ]
 
 # Set this to the absolute path to the folder (NOT the file!) containing the
@@ -28,14 +32,14 @@ flags = [
 #
 # Most projects will NOT need to set this to anything; you can just change the
 # 'flags' list of compilation flags. Notice that YCM itself uses that approach.
-compilation_database_folder = ''
+compilation_database_folder = ""
 
 if os.path.exists(compilation_database_folder):
     database = ycm_core.CompilationDatabase(compilation_database_folder)
 else:
     database = None
 
-SOURCE_EXTENSIONS = ['.cc']
+SOURCE_EXTENSIONS = [".cc"]
 
 
 def directory_of_this_script():
@@ -47,13 +51,13 @@ def make_relative_paths_in_flags_absolute(flags, working_directory):
         return list(flags)
     new_flags = []
     make_next_absolute = False
-    path_flags = ['-isystem', '-I', '-iquote', '--sysroot=']
+    path_flags = ["-isystem", "-I", "-iquote", "--sysroot="]
     for flag in flags:
         new_flag = flag
 
         if make_next_absolute:
             make_next_absolute = False
-            if not flag.startswith('/'):
+            if not flag.startswith("/"):
                 new_flag = os.path.join(working_directory, flag)
 
         for path_flag in path_flags:
@@ -62,7 +66,7 @@ def make_relative_paths_in_flags_absolute(flags, working_directory):
                 break
 
             if flag.startswith(path_flag):
-                path = flag[len(path_flag):]
+                path = flag[len(path_flag) :]
                 new_flag = path_flag + os.path.join(working_directory, path)
                 break
 
@@ -73,7 +77,7 @@ def make_relative_paths_in_flags_absolute(flags, working_directory):
 
 def is_header_file(filename):
     extension = os.path.splitext(filename)[1]
-    return extension in ['.h', '.hxx', '.hpp', '.hh']
+    return extension in [".h", ".hxx", ".hpp", ".hh"]
 
 
 def get_compilation_info_for_file(filename):
@@ -86,8 +90,7 @@ def get_compilation_info_for_file(filename):
         for extension in SOURCE_EXTENSIONS:
             replacement_file = basename + extension
             if os.path.exists(replacement_file):
-                compilation_info = database.GetCompilationInfoForFile(
-                    replacement_file)
+                compilation_info = database.GetCompilationInfoForFile(replacement_file)
                 if compilation_info.compiler_flags_:
                     return compilation_info
         return None
@@ -103,13 +106,10 @@ def flags_for_file(filename):
             return None
 
         final_flags = make_relative_paths_in_flags_absolute(
-            compilation_info.compiler_flags_,
-            compilation_info.compiler_working_dir_)
+            compilation_info.compiler_flags_, compilation_info.compiler_working_dir_
+        )
     else:
         relative_to = directory_of_this_script()
         final_flags = make_relative_paths_in_flags_absolute(flags, relative_to)
 
-    return {
-        'flags': final_flags,
-        'do_cache': True
-    }
+    return {"flags": final_flags, "do_cache": True}

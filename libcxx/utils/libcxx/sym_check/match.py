@@ -14,19 +14,19 @@ import re
 
 
 def find_and_report_matching(symbol_list, regex_list):
-    report = ''
+    report = ""
     found_count = 0
     for regex_str in regex_list:
         report += 'Matching regex "%s":\n' % regex_str
         matching_list = find_matching_symbols(symbol_list, regex_str)
         if not matching_list:
-            report += '    No matches found\n\n'
+            report += "    No matches found\n\n"
             continue
         # else
         found_count += len(matching_list)
         for m in matching_list:
-            report += '    MATCHES: %s\n' % m['name']
-        report += '\n'
+            report += "    MATCHES: %s\n" % m["name"]
+        report += "\n"
     return found_count, report
 
 
@@ -34,6 +34,6 @@ def find_matching_symbols(symbol_list, regex_str):
     regex = re.compile(regex_str)
     matching_list = []
     for s in symbol_list:
-        if regex.match(s['name']):
+        if regex.match(s["name"]):
             matching_list += [s]
     return matching_list

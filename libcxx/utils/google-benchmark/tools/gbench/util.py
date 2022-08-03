@@ -11,7 +11,7 @@ IT_Invalid = 0
 IT_JSON = 1
 IT_Executable = 2
 
-_num_magic_bytes = 2 if sys.platform.startswith('win') else 4
+_num_magic_bytes = 2 if sys.platform.startswith("win") else 4
 
 
 def is_executable_file(filename):
@@ -22,21 +22,21 @@ def is_executable_file(filename):
     """
     if not os.path.isfile(filename):
         return False
-    with open(filename, mode='rb') as f:
+    with open(filename, mode="rb") as f:
         magic_bytes = f.read(_num_magic_bytes)
-    if sys.platform == 'darwin':
+    if sys.platform == "darwin":
         return magic_bytes in [
-            b'\xfe\xed\xfa\xce',  # MH_MAGIC
-            b'\xce\xfa\xed\xfe',  # MH_CIGAM
-            b'\xfe\xed\xfa\xcf',  # MH_MAGIC_64
-            b'\xcf\xfa\xed\xfe',  # MH_CIGAM_64
-            b'\xca\xfe\xba\xbe',  # FAT_MAGIC
-            b'\xbe\xba\xfe\xca'   # FAT_CIGAM
+            b"\xfe\xed\xfa\xce",  # MH_MAGIC
+            b"\xce\xfa\xed\xfe",  # MH_CIGAM
+            b"\xfe\xed\xfa\xcf",  # MH_MAGIC_64
+            b"\xcf\xfa\xed\xfe",  # MH_CIGAM_64
+            b"\xca\xfe\xba\xbe",  # FAT_MAGIC
+            b"\xbe\xba\xfe\xca",  # FAT_CIGAM
         ]
-    elif sys.platform.startswith('win'):
-        return magic_bytes == b'MZ'
+    elif sys.platform.startswith("win"):
+        return magic_bytes == b"MZ"
     else:
-        return magic_bytes == b'\x7FELF'
+        return magic_bytes == b"\x7FELF"
 
 
 def is_json_file(filename):
@@ -45,7 +45,7 @@ def is_json_file(filename):
     'False' otherwise.
     """
     try:
-        with open(filename, 'r') as f:
+        with open(filename, "r") as f:
             json.load(f)
         return True
     except BaseException:
@@ -70,7 +70,9 @@ def classify_input_file(filename):
     elif is_json_file(filename):
         ftype = IT_JSON
     else:
-        err_msg = "'%s' does not name a valid benchmark executable or JSON file" % filename
+        err_msg = (
+            "'%s' does not name a valid benchmark executable or JSON file" % filename
+        )
     return ftype, err_msg
 
 
@@ -93,11 +95,11 @@ def find_benchmark_flag(prefix, benchmark_flags):
     if it is found return the arg it specifies. If specified more than once the
     last value is returned. If the flag is not found None is returned.
     """
-    assert prefix.startswith('--') and prefix.endswith('=')
+    assert prefix.startswith("--") and prefix.endswith("=")
     result = None
     for f in benchmark_flags:
         if f.startswith(prefix):
-            result = f[len(prefix):]
+            result = f[len(prefix) :]
     return result
 
 
@@ -106,7 +108,7 @@ def remove_benchmark_flags(prefix, benchmark_flags):
     Return a new list containing the specified benchmark_flags except those
     with the specified prefix.
     """
-    assert prefix.startswith('--') and prefix.endswith('=')
+    assert prefix.startswith("--") and prefix.endswith("=")
     return [f for f in benchmark_flags if not f.startswith(prefix)]
 
 
@@ -115,7 +117,7 @@ def load_benchmark_results(fname):
     Read benchmark output from a file and return the JSON object.
     REQUIRES: 'fname' names a file containing JSON benchmark output.
     """
-    with open(fname, 'r') as f:
+    with open(fname, "r") as f:
         return json.load(f)
 
 
@@ -126,21 +128,19 @@ def run_benchmark(exe_name, benchmark_flags):
     real time console output.
     RETURNS: A JSON object representing the benchmark output
     """
-    output_name = find_benchmark_flag('--benchmark_out=',
-                                      benchmark_flags)
+    output_name = find_benchmark_flag("--benchmark_out=", benchmark_flags)
     is_temp_output = False
     if output_name is None:
         is_temp_output = True
         thandle, output_name = tempfile.mkstemp()
         os.close(thandle)
-        benchmark_flags = list(benchmark_flags) + \
-            ['--benchmark_out=%s' % output_name]
+        benchmark_flags = list(benchmark_flags) + ["--benchmark_out=%s" % output_name]
 
     cmd = [exe_name] + benchmark_flags
-    print("RUNNING: %s" % ' '.join(cmd))
+    print("RUNNING: %s" % " ".join(cmd))
     exit_code = subprocess.call(cmd)
     if exit_code != 0:
-        print('TEST FAILED...')
+        print("TEST FAILED...")
         sys.exit(exit_code)
     json_res = load_benchmark_results(output_name)
     if is_temp_output:

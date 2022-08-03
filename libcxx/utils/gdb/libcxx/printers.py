@@ -67,8 +67,10 @@ def _remove_generics(typename):
 # Some common substitutions on the types to reduce visual clutter (A user who
 # wants to see the actual details can always use print/r).
 _common_substitutions = [
-    ("std::basic_string<char, std::char_traits<char>, std::allocator<char> >",
-     "std::string"),
+    (
+        "std::basic_string<char, std::char_traits<char>, std::allocator<char> >",
+        "std::string",
+    ),
 ]
 
 
@@ -84,8 +86,11 @@ def _prettify_typename(gdb_type):
     """
 
     type_without_typedefs = gdb_type.strip_typedefs()
-    typename = type_without_typedefs.name or type_without_typedefs.tag or \
-        str(type_without_typedefs)
+    typename = (
+        type_without_typedefs.name
+        or type_without_typedefs.tag
+        or str(type_without_typedefs)
+    )
     result = _remove_cxx_namespace(typename)
     for find_str, subst_str in _common_substitutions:
         result = re.sub(find_str, subst_str, result)
@@ -251,9 +256,10 @@ class StdUniquePtrPrinter(object):
         typename = _remove_generics(_prettify_typename(self.val.type))
         if not self.addr:
             return "%s is nullptr" % typename
-        return ("%s<%s> containing" %
-                (typename,
-                 _remove_generics(_prettify_typename(self.pointee_type))))
+        return "%s<%s> containing" % (
+            typename,
+            _remove_generics(_prettify_typename(self.pointee_type)),
+        )
 
     def __iter__(self):
         if self.addr:
@@ -274,7 +280,8 @@ class StdSharedPointerPrinter(object):
         """Returns self as a string."""
         typename = _remove_generics(_prettify_typename(self.val.type))
         pointee_type = _remove_generics(
-            _prettify_typename(self.val.type.template_argument(0)))
+            _prettify_typename(self.val.type.template_argument(0))
+        )
         if not self.addr:
             return "%s is nullptr" % typename
         refcount = self.val["__cntrl_"]
@@ -357,20 +364,24 @@ class StdVectorPrinter(object):
             self.typename += "<bool>"
             self.length = self.val["__size_"]
             bits_per_word = self.val["__bits_per_word"]
-            self.capacity = _value_of_pair_first(
-                self.val["__cap_alloc_"]) * bits_per_word
-            self.iterator = self._VectorBoolIterator(
-                begin, self.length, bits_per_word)
+            self.capacity = (
+                _value_of_pair_first(self.val["__cap_alloc_"]) * bits_per_word
+            )
+            self.iterator = self._VectorBoolIterator(begin, self.length, bits_per_word)
         else:
             end = self.val["__end_"]
             self.length = end - begin
-            self.capacity = _get_base_subobject(
-                self.val["__end_cap_"])["__value_"] - begin
+            self.capacity = (
+                _get_base_subobject(self.val["__end_cap_"])["__value_"] - begin
+            )
             self.iterator = self._VectorIterator(begin, end)
 
     def to_string(self):
-        return ("%s of length %d, capacity %d" %
-                (self.typename, self.length, self.capacity))
+        return "%s of length %d, capacity %d" % (
+            self.typename,
+            self.length,
+            self.capacity,
+        )
 
     def children(self):
         return self.iterator
@@ -389,8 +400,9 @@ class StdBitsetPrinter(object):
         if self.n_words == 1:
             self.values = [int(self.val["__first_"])]
         else:
-            self.values = [int(self.val["__first_"][index])
-                           for index in range(self.n_words)]
+            self.values = [
+                int(self.val["__first_"][index]) for index in range(self.n_words)
+            ]
 
     def to_string(self):
         typename = _prettify_typename(self.val.type)
@@ -428,8 +440,7 @@ class StdDequePrinter(object):
         self.start_ptr = self.val["__map_"]["__begin_"]
         self.first_block_start_index = int(self.val["__start_"])
         self.node_type = self.start_ptr.type
-        self.block_size = self._calculate_block_size(
-            val.type.template_argument(0))
+        self.block_size = self._calculate_block_size(val.type.template_argument(0))
 
     def _calculate_block_size(self, element_type):
         """Calculates the number of elements in a full block."""
@@ -447,13 +458,13 @@ class StdDequePrinter(object):
         current_addr = self.start_ptr
         start_index = self.first_block_start_index
         while num_emitted < self.size:
-            end_index = min(start_index + self.size -
-                            num_emitted, self.block_size)
+            end_index = min(start_index + self.size - num_emitted, self.block_size)
             for _, elem in self._bucket_it(current_addr, start_index, end_index):
                 yield "", elem
             num_emitted += end_index - start_index
-            current_addr = gdb.Value(addr_as_long(current_addr) + _pointer_size) \
-                .cast(self.node_type)
+            current_addr = gdb.Value(addr_as_long(current_addr) + _pointer_size).cast(
+                self.node_type
+            )
             start_index = 0
 
     def to_string(self):
@@ -481,8 +492,10 @@ class StdListPrinter(object):
         self.size = int(_value_of_pair_first(size_alloc_field))
         dummy_node = self.val["__end_"]
         self.nodetype = gdb.lookup_type(
-            re.sub("__list_node_base", "__list_node",
-                   str(dummy_node.type.strip_typedefs()))).pointer()
+            re.sub(
+                "__list_node_base", "__list_node", str(dummy_node.type.strip_typedefs())
+            )
+        ).pointer()
         self.first_node = dummy_node["__next_"]
 
     def to_string(self):
@@ -658,8 +671,7 @@ class StdMapPrinter(AbstractRBTreePrinter):
     """Print a std::map or std::multimap."""
 
     def _init_cast_type(self, val_type):
-        map_it_type = gdb.lookup_type(
-            str(val_type) + "::iterator").strip_typedefs()
+        map_it_type = gdb.lookup_type(str(val_type) + "::iterator").strip_typedefs()
         tree_it_type = map_it_type.template_argument(0)
         node_ptr_type = tree_it_type.template_argument(1)
         return node_ptr_type
@@ -668,8 +680,7 @@ class StdMapPrinter(AbstractRBTreePrinter):
         return "map"
 
     def _get_key_value(self, node):
-        key_value = node.cast(self.util.cast_type).dereference()[
-            "__value_"]["__cc"]
+        key_value = node.cast(self.util.cast_type).dereference()["__value_"]["__cc"]
         return [key_value["first"], key_value["second"]]
 
 
@@ -677,8 +688,7 @@ class StdSetPrinter(AbstractRBTreePrinter):
     """Print a std::set."""
 
     def _init_cast_type(self, val_type):
-        set_it_type = gdb.lookup_type(
-            str(val_type) + "::iterator").strip_typedefs()
+        set_it_type = gdb.lookup_type(str(val_type) + "::iterator").strip_typedefs()
         node_ptr_type = set_it_type.template_argument(1)
         return node_ptr_type
 
@@ -705,8 +715,7 @@ class AbstractRBTreeIteratorPrinter(object):
     def _is_valid_node(self):
         if not self.util.parent(self.addr):
             return False
-        return self.util.is_left_child(self.addr) or \
-            self.util.is_right_child(self.addr)
+        return self.util.is_left_child(self.addr) or self.util.is_right_child(self.addr)
 
     def to_string(self):
         if not self.addr:
@@ -731,8 +740,7 @@ class MapIteratorPrinter(AbstractRBTreeIteratorPrinter):
     """Print a std::(multi)map iterator."""
 
     def __init__(self, val):
-        self._initialize(val["__i_"],
-                         _remove_generics(_prettify_typename(val.type)))
+        self._initialize(val["__i_"], _remove_generics(_prettify_typename(val.type)))
 
     def _get_node_value(self, node):
         return node["__value_"]["__cc"]
@@ -761,7 +769,11 @@ class StdFposPrinter(object):
         count = state["__count"]
         value = state["__value"]["__wch"]
         return "%s with stream offset:%s with state: {count:%s value:%s}" % (
-            typename, offset, count, value)
+            typename,
+            offset,
+            count,
+            value,
+        )
 
 
 class AbstractUnorderedCollectionPrinter(object):
@@ -942,10 +954,7 @@ class LibcxxPrettyPrinter(object):
         # Don't attempt types known to be inside libstdcxx.
         typename = val.type.name or val.type.tag or str(val.type)
         match = re.match("^std::(__.*?)::", typename)
-        if match is None or match.group(1) in ["__cxx1998",
-                                               "__debug",
-                                               "__7",
-                                               "__g"]:
+        if match is None or match.group(1) in ["__cxx1998", "__debug", "__7", "__g"]:
             return None
 
         # Handle any using declarations or other typedefs.
@@ -971,13 +980,13 @@ def _register_libcxx_printers(event):
     # already generated as part of a larger data structure, and there is
     # no python api to get the endianness. Mixed-endianness debugging
     # rare enough that this workaround should be adequate.
-    _libcpp_big_endian = "big endian" in gdb.execute("show endian",
-                                                     to_string=True)
+    _libcpp_big_endian = "big endian" in gdb.execute("show endian", to_string=True)
 
     if not getattr(progspace, _libcxx_printer_name, False):
         print("Loading libc++ pretty-printers.")
         gdb.printing.register_pretty_printer(
-            progspace, LibcxxPrettyPrinter(_libcxx_printer_name))
+            progspace, LibcxxPrettyPrinter(_libcxx_printer_name)
+        )
         setattr(progspace, _libcxx_printer_name, True)
 
 

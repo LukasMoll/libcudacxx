@@ -15,8 +15,10 @@ import libcxx.util
 import lit.Test  # pylint: disable=import-error
 import lit.TestRunner  # pylint: disable=import-error
 from libcxx.test.executor import LocalExecutor as LocalExecutor
-from lit.TestRunner import ParserKind, IntegratedTestKeywordParser \
-    # pylint: disable=import-error
+from lit.TestRunner import (
+    ParserKind,
+    IntegratedTestKeywordParser,
+)  # pylint: disable=import-error
 
 
 class LibcxxTestFormat(object):
@@ -30,8 +32,7 @@ class LibcxxTestFormat(object):
       FOO.sh.cpp   - A test that uses LIT's ShTest format.
     """
 
-    def __init__(self, cxx, use_verify_for_fail, execute_external,
-                 executor, exec_env):
+    def __init__(self, cxx, use_verify_for_fail, execute_external, executor, exec_env):
         self.cxx = copy.deepcopy(cxx)
         self.use_verify_for_fail = use_verify_for_fail
         self.execute_external = execute_external
@@ -41,10 +42,12 @@ class LibcxxTestFormat(object):
     @staticmethod
     def _make_custom_parsers():
         return [
-            IntegratedTestKeywordParser('FLAKY_TEST.', ParserKind.TAG,
-                                        initial_value=False),
-            IntegratedTestKeywordParser('MODULES_DEFINES:', ParserKind.LIST,
-                                        initial_value=[])
+            IntegratedTestKeywordParser(
+                "FLAKY_TEST.", ParserKind.TAG, initial_value=False
+            ),
+            IntegratedTestKeywordParser(
+                "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
+            ),
         ]
 
     @staticmethod
@@ -59,15 +62,15 @@ class LibcxxTestFormat(object):
         source_path = test_suite.getSourcePath(path_in_suite)
         for filename in os.listdir(source_path):
             # Ignore dot files and excluded tests.
-            if filename.startswith('.') or filename in local_config.excludes:
+            if filename.startswith(".") or filename in local_config.excludes:
                 continue
 
             filepath = os.path.join(source_path, filename)
             if not os.path.isdir(filepath):
-                if any([filename.endswith(ext)
-                        for ext in local_config.suffixes]):
-                    yield lit.Test.Test(test_suite, path_in_suite + (filename,),
-                                        local_config)
+                if any([filename.endswith(ext) for ext in local_config.suffixes]):
+                    yield lit.Test.Test(
+                        test_suite, path_in_suite + (filename,), local_config
+                    )
 
     def execute(self, test, lit_config):
         while True:
@@ -81,25 +84,28 @@ class LibcxxTestFormat(object):
     def _execute(self, test, lit_config):
         name = test.path_in_suite[-1]
         name_root, name_ext = os.path.splitext(name)
-        is_libcxx_test = test.path_in_suite[0] == 'libcxx'
-        is_sh_test = name_root.endswith('.sh')
-        is_pass_test = name.endswith('.pass.cpp') or name.endswith('.pass.mm')
-        is_fail_test = name.endswith('.fail.cpp') or name.endswith('.fail.mm')
-        is_objcxx_test = name.endswith('.mm')
-        is_objcxx_arc_test = name.endswith('.arc.pass.mm') or name.endswith('.arc.fail.mm')
-        assert is_sh_test or name_ext == '.cpp' or name_ext == '.mm', \
-            'non-cpp file must be sh test'
+        is_libcxx_test = test.path_in_suite[0] == "libcxx"
+        is_sh_test = name_root.endswith(".sh")
+        is_pass_test = name.endswith(".pass.cpp") or name.endswith(".pass.mm")
+        is_fail_test = name.endswith(".fail.cpp") or name.endswith(".fail.mm")
+        is_objcxx_test = name.endswith(".mm")
+        is_objcxx_arc_test = name.endswith(".arc.pass.mm") or name.endswith(
+            ".arc.fail.mm"
+        )
+        assert (
+            is_sh_test or name_ext == ".cpp" or name_ext == ".mm"
+        ), "non-cpp file must be sh test"
 
         if test.config.unsupported:
-            return (lit.Test.UNSUPPORTED,
-                    "A lit.local.cfg marked this unsupported")
+            return (lit.Test.UNSUPPORTED, "A lit.local.cfg marked this unsupported")
 
-        if is_objcxx_test and 'objective-c++' not in test.config.available_features:
+        if is_objcxx_test and "objective-c++" not in test.config.available_features:
             return lit.Test.UNSUPPORTED, "Objective-C++ is not supported"
 
         parsers = self._make_custom_parsers()
         script = lit.TestRunner.parseIntegratedTestScript(
-            test, additional_parsers=parsers, require_script=is_sh_test)
+            test, additional_parsers=parsers, require_script=is_sh_test
+        )
         # Check if a result for the test was returned. If so return that
         # result.
         if isinstance(script, lit.Test.Result):
@@ -109,50 +115,49 @@ class LibcxxTestFormat(object):
 
         # Check that we don't have run lines on tests that don't support them.
         if not is_sh_test and len(script) != 0:
-            lit_config.fatal('Unsupported RUN line found in test %s' % name)
+            lit_config.fatal("Unsupported RUN line found in test %s" % name)
 
         tmp_dir, tmp_base = lit.TestRunner.getTempPaths(test)
-        substitutions = lit.TestRunner.getDefaultSubstitutions(test, tmp_dir,
-                                                               tmp_base)
+        substitutions = lit.TestRunner.getDefaultSubstitutions(test, tmp_dir, tmp_base)
         script = lit.TestRunner.applySubstitutions(script, substitutions)
 
         test_cxx = copy.deepcopy(self.cxx)
         if is_fail_test:
             test_cxx.use_c_cache(False)
             test_cxx.use_warnings(False)
-        extra_modules_defines = self._get_parser('MODULES_DEFINES:',
-                                                 parsers).getValue()
-        if '-fmodules' in test.config.available_features:
-            test_cxx.compile_flags += [('-D%s' % mdef.strip()) for
-                                       mdef in extra_modules_defines]
-            test_cxx.add_warning_flag_if_supported('-Wno-macro-redefined')
+        extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
+        if "-fmodules" in test.config.available_features:
+            test_cxx.compile_flags += [
+                ("-D%s" % mdef.strip()) for mdef in extra_modules_defines
+            ]
+            test_cxx.add_warning_flag_if_supported("-Wno-macro-redefined")
             # FIXME: libc++ debug tests #define _LIBCUDACXX_ASSERT to override it
             # If we see this we need to build the test against uniquely built
             # modules.
             if is_libcxx_test:
-                with open(test.getSourcePath(), 'rb') as f:
+                with open(test.getSourcePath(), "rb") as f:
                     contents = f.read()
-                if b'#define _LIBCUDACXX_ASSERT' in contents:
+                if b"#define _LIBCUDACXX_ASSERT" in contents:
                     test_cxx.use_modules(False)
 
         if is_objcxx_test:
-            test_cxx.source_lang = 'objective-c++'
+            test_cxx.source_lang = "objective-c++"
             if is_objcxx_arc_test:
-                test_cxx.compile_flags += ['-fobjc-arc']
+                test_cxx.compile_flags += ["-fobjc-arc"]
             else:
-                test_cxx.compile_flags += ['-fno-objc-arc']
-            test_cxx.link_flags += ['-framework', 'Foundation']
+                test_cxx.compile_flags += ["-fno-objc-arc"]
+            test_cxx.link_flags += ["-framework", "Foundation"]
 
         # Dispatch the test based on its suffix.
         if is_sh_test:
             if not isinstance(self.executor, LocalExecutor):
                 # We can't run ShTest tests with a executor yet.
                 # For now, bail on trying to run them
-                return lit.Test.UNSUPPORTED, 'ShTest format not yet supported'
+                return lit.Test.UNSUPPORTED, "ShTest format not yet supported"
             test.config.environment = dict(self.exec_env)
-            return lit.TestRunner._runShTest(test, lit_config,
-                                             self.execute_external, script,
-                                             tmp_base)
+            return lit.TestRunner._runShTest(
+                test, lit_config, self.execute_external, script, tmp_base
+            )
         elif is_fail_test:
             return self._evaluate_fail_test(test, test_cxx)
         elif is_pass_test:
@@ -167,15 +172,15 @@ class LibcxxTestFormat(object):
     def _evaluate_pass_test(self, test, tmp_base, test_cxx, parsers):
         exec_dir = os.path.dirname(test.getExecPath())
         source_path = test.getSourcePath()
-        exec_path = tmp_base + '.exe'
-        object_path = tmp_base + '.o'
+        exec_path = tmp_base + ".exe"
+        object_path = tmp_base + ".o"
         # Create the output directory if it does not already exist.
         libcxx.util.mkdir_p(os.path.dirname(tmp_base))
         try:
             # Compile the test
             cmd, out, err, rc = test_cxx.compile_link_two_steps(
-                source_path, out=exec_path, object_file=object_path,
-                cwd=exec_dir)
+                source_path, out=exec_path, object_file=object_path, cwd=exec_dir
+            )
             compile_cmd = cmd
             if rc != 0:
                 report = libcxx.util.make_report(cmd, out, err, rc)
@@ -190,15 +195,18 @@ class LibcxxTestFormat(object):
             # Right now we just mark all of the .dat files in the same
             # directory as dependencies, but it's likely less than that. We
             # should add a `// FILE-DEP: foo.dat` to each test to track this.
-            data_files = [os.path.join(local_cwd, f)
-                          for f in os.listdir(local_cwd) if f.endswith('.dat')]
-            is_flaky = self._get_parser('FLAKY_TEST.', parsers).getValue()
+            data_files = [
+                os.path.join(local_cwd, f)
+                for f in os.listdir(local_cwd)
+                if f.endswith(".dat")
+            ]
+            is_flaky = self._get_parser("FLAKY_TEST.", parsers).getValue()
             max_retry = 3 if is_flaky else 1
             for retry_count in range(max_retry):
-                cmd, out, err, rc = self.executor.run(exec_path, [exec_path],
-                                                      local_cwd, data_files,
-                                                      env)
-                report = "Compiled With: '%s'\n" % ' '.join(compile_cmd)
+                cmd, out, err, rc = self.executor.run(
+                    exec_path, [exec_path], local_cwd, data_files, env
+                )
+                report = "Compiled With: '%s'\n" % " ".join(compile_cmd)
                 report += libcxx.util.make_report(cmd, out, err, rc)
                 if rc == 0:
                     res = lit.Test.PASS if retry_count == 0 else lit.Test.FLAKYPASS
@@ -217,23 +225,29 @@ class LibcxxTestFormat(object):
     def _evaluate_fail_test(self, test, test_cxx):
         source_path = test.getSourcePath()
         # FIXME: lift this detection into LLVM/LIT.
-        with open(source_path, 'rb') as f:
+        with open(source_path, "rb") as f:
             contents = f.read()
-        verify_tags = [b'expected-note', b'expected-remark',
-                       b'expected-warning', b'expected-error',
-                       b'expected-no-diagnostics']
-        use_verify = self.use_verify_for_fail and any([tag in contents for tag in verify_tags])
+        verify_tags = [
+            b"expected-note",
+            b"expected-remark",
+            b"expected-warning",
+            b"expected-error",
+            b"expected-no-diagnostics",
+        ]
+        use_verify = self.use_verify_for_fail and any(
+            [tag in contents for tag in verify_tags]
+        )
         # FIXME(EricWF): GCC 5 does not evaluate static assertions that
         # are dependant on a template parameter when '-fsyntax-only' is passed.
         # This is fixed in GCC 6. However for now we only pass "-fsyntax-only"
         # when using Clang.
-        if test_cxx.type != 'gcc' and test_cxx.type != 'nvcc':
-            test_cxx.flags += ['-fsyntax-only']
+        if test_cxx.type != "gcc" and test_cxx.type != "nvcc":
+            test_cxx.flags += ["-fsyntax-only"]
         if use_verify:
             test_cxx.use_verify()
             test_cxx.use_warnings()
-            if '-Wuser-defined-warnings' in test_cxx.warning_flags:
-                test_cxx.warning_flags += ['-Wno-error=user-defined-warnings']
+            if "-Wuser-defined-warnings" in test_cxx.warning_flags:
+                test_cxx.warning_flags += ["-Wno-error=user-defined-warnings"]
         else:
             # We still need to enable certain warnings on .fail.cpp test when
             # -verify isn't enabled. Such as -Werror=unused-result. However,
@@ -242,10 +256,9 @@ class LibcxxTestFormat(object):
             #
             # Therefore, we check if the test was expected to fail because of
             # nodiscard before enabling it
-            test_str_list = [b'ignoring return value', b'nodiscard',
-                             b'NODISCARD']
+            test_str_list = [b"ignoring return value", b"nodiscard", b"NODISCARD"]
             if any(test_str in contents for test_str in test_str_list):
-                test_cxx.flags += ['-Werror=unused-result']
+                test_cxx.flags += ["-Werror=unused-result"]
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
 
         def check_rc(rc):
@@ -255,6 +268,9 @@ class LibcxxTestFormat(object):
         if check_rc(rc):
             return lit.Test.Result(lit.Test.PASS, report)
         else:
-            report += ('Expected compilation to fail!\n' if not use_verify else
-                       'Expected compilation using verify to pass!\n')
+            report += (
+                "Expected compilation to fail!\n"
+                if not use_verify
+                else "Expected compilation using verify to pass!\n"
+            )
             return lit.Test.Result(lit.Test.FAIL, report)

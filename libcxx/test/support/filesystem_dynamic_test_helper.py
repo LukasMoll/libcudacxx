@@ -3,13 +3,17 @@ import socket
 import sys
 
 # Ensure that this is being run on a specific platform
-assert sys.platform.startswith('linux') or sys.platform.startswith('darwin') \
-       or sys.platform.startswith('cygwin') or sys.platform.startswith('freebsd') \
-       or sys.platform.startswith('netbsd')
+assert (
+    sys.platform.startswith("linux")
+    or sys.platform.startswith("darwin")
+    or sys.platform.startswith("cygwin")
+    or sys.platform.startswith("freebsd")
+    or sys.platform.startswith("netbsd")
+)
 
 
 def env_path():
-    ep = os.environ.get('LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT')
+    ep = os.environ.get("LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT")
     assert ep is not None
     ep = os.path.realpath(ep)
     assert os.path.isdir(ep)
@@ -61,8 +65,8 @@ def destroy_test_directory(root_p):
 
 
 def create_file(fname, size):
-    with open(sanitize(fname), 'w') as f:
-        f.write('c' * size)
+    with open(sanitize(fname), "w") as f:
+        f.write("c" * size)
 
 
 def create_dir(dname):
@@ -91,7 +95,7 @@ def create_socket(source):
     sock.bind(os.path.basename(sanitized_source))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     command = " ".join(sys.argv[1:])
     eval(command)
     sys.exit(0)

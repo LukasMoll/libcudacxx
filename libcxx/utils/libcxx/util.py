@@ -22,7 +22,7 @@ def to_bytes(str):
     # Encode to UTF-8 to get binary data.
     if isinstance(str, bytes):
         return str
-    return str.encode('utf-8')
+    return str.encode("utf-8")
 
 
 def to_string(bytes):
@@ -33,7 +33,7 @@ def to_string(bytes):
 
 def convert_string(bytes):
     try:
-        return to_string(bytes.decode('utf-8'))
+        return to_string(bytes.decode("utf-8"))
     except AttributeError:  # 'str' object has no attribute 'decode'.
         return str(bytes)
     except UnicodeError:
@@ -48,7 +48,7 @@ def clean_file(filename):
 
 
 @contextmanager
-def guarded_temp_filename(suffix='', prefix='', dir=None):
+def guarded_temp_filename(suffix="", prefix="", dir=None):
     # Creates and yeilds a temporary filename within a with statement. The file
     # is removed upon scope exit.
     handle, name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir)
@@ -79,7 +79,7 @@ def make_report(cmd, out, err, rc):
         report += "Standard Output:\n--\n%s--\n" % out
     if err:
         report += "Standard Error:\n--\n%s--\n" % err
-    report += '\n'
+    report += "\n"
     return report
 
 
@@ -87,15 +87,14 @@ def capture(args, env=None):
     """capture(command) - Run the given command (or argv list) in a shell and
     return the standard output. Raises a CalledProcessError if the command
     exits with a non-zero status."""
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                         env=env)
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     out, err = p.communicate()
     out = convert_string(out)
     err = convert_string(err)
     if p.returncode != 0:
-        raise subprocess.CalledProcessError(cmd=args,
-                                            returncode=p.returncode,
-                                            output="{}\n{}".format(out, err))
+        raise subprocess.CalledProcessError(
+            cmd=args, returncode=p.returncode, output="{}\n{}".format(out, err)
+        )
     return out
 
 
@@ -104,7 +103,7 @@ def which(command, paths=None):
     (or the PATH environment variable, if unspecified)."""
 
     if paths is None:
-        paths = os.environ.get('PATH', '')
+        paths = os.environ.get("PATH", "")
 
     # Check for absolute match first.
     if os.path.isfile(command):
@@ -116,10 +115,10 @@ def which(command, paths=None):
 
     # Get suffixes to search.
     # On Cygwin, 'PATHEXT' may exist but it should not be used.
-    if os.pathsep == ';':
-        pathext = os.environ.get('PATHEXT', '').split(';')
+    if os.pathsep == ";":
+        pathext = os.environ.get("PATHEXT", "").split(";")
     else:
-        pathext = ['']
+        pathext = [""]
 
     # Search the paths...
     for path in paths.split(os.pathsep):
@@ -178,35 +177,39 @@ class ExecuteCommandTimeoutException(Exception):
 
 # Close extra file handles on UNIX (on Windows this cannot be done while
 # also redirecting input).
-kUseCloseFDs = not (platform.system() == 'Windows')
+kUseCloseFDs = not (platform.system() == "Windows")
 
 
 def execute_command(command, cwd=None, env=None, input=None, timeout=0):
     """
-        Execute command ``command`` (list of arguments or string)
-        with
-        * working directory ``cwd`` (str), use None to use the current
-          working directory
-        * environment ``env`` (dict), use None for none
-        * Input to the command ``input`` (str), use string to pass
-          no input.
-        * Max execution time ``timeout`` (int) seconds. Use 0 for no timeout.
+    Execute command ``command`` (list of arguments or string)
+    with
+    * working directory ``cwd`` (str), use None to use the current
+      working directory
+    * environment ``env`` (dict), use None for none
+    * Input to the command ``input`` (str), use string to pass
+      no input.
+    * Max execution time ``timeout`` (int) seconds. Use 0 for no timeout.
 
-        Returns a tuple (out, err, exit_code) where
-        * ``out`` (str) is the standard output of running the command
-        * ``err`` (str) is the standard error of running the command
-        * ``exit_code`` (int) is the exit_code of running the command
+    Returns a tuple (out, err, exit_code) where
+    * ``out`` (str) is the standard output of running the command
+    * ``err`` (str) is the standard error of running the command
+    * ``exit_code`` (int) is the exit_code of running the command
 
-        If the timeout is hit an ``ExecuteCommandTimeoutException``
-        is raised.
+    If the timeout is hit an ``ExecuteCommandTimeoutException``
+    is raised.
     """
     if input is not None:
         input = to_bytes(input)
-    p = subprocess.Popen(command, cwd=cwd,
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE,
-                         env=env, close_fds=kUseCloseFDs)
+    p = subprocess.Popen(
+        command,
+        cwd=cwd,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        close_fds=kUseCloseFDs,
+    )
     timer_object = None
     # FIXME: Because of the way nested function scopes work in Python 2.x we
     # need to use a reference to a mutable object rather than a plain
@@ -215,6 +218,7 @@ def execute_command(command, cwd=None, env=None, input=None, timeout=0):
     hit_time_out = [False]
     try:
         if timeout > 0:
+
             def kill_process():
                 # We may be invoking a shell so we need to kill the
                 # process and all its children.
@@ -236,10 +240,10 @@ def execute_command(command, cwd=None, env=None, input=None, timeout=0):
 
     if hit_time_out[0]:
         raise ExecuteCommandTimeoutException(
-            msg='Reached timeout of {} seconds'.format(timeout),
+            msg="Reached timeout of {} seconds".format(timeout),
             out=out,
             err=err,
-            exit_code=exit_code
+            exit_code=exit_code,
         )
 
     # Detect Ctrl-C in subprocess.
@@ -259,10 +263,11 @@ def kill_process_and_children(pid):
     TODO: Reimplement this without using psutil so we can
           remove our dependency on it.
     """
-    if platform.system() == 'AIX':
-        subprocess.call('kill -kill $(ps -o pid= -L{})'.format(pid), shell=True)
+    if platform.system() == "AIX":
+        subprocess.call("kill -kill $(ps -o pid= -L{})".format(pid), shell=True)
     else:
         import psutil
+
         try:
             psutil_proc = psutil.Process(pid)
             # Handle the different psutil API versions
@@ -290,5 +295,5 @@ def execute_command_verbose(cmd, *args, **kwargs):
     if exit_code != 0:
         report = make_report(cmd, out, err, exit_code)
         report += "\n\nFailed!"
-        sys.stderr.write('%s\n' % report)
+        sys.stderr.write("%s\n" % report)
     return out, err, exit_code

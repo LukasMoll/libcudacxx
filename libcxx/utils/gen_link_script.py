@@ -19,25 +19,30 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--dryrun", help="Don't write any output",
-                        action="store_true", default=False)
-    parser.add_argument("--rename", action="store_true", default=False,
-                        help="Rename the output as input so we can replace it")
+    parser.add_argument(
+        "--dryrun", help="Don't write any output", action="store_true", default=False
+    )
+    parser.add_argument(
+        "--rename",
+        action="store_true",
+        default=False,
+        help="Rename the output as input so we can replace it",
+    )
     parser.add_argument("--input", help="Path to libc++ library", required=True)
-    parser.add_argument("--output", help="Path to libc++ linker script",
-                        required=True)
-    parser.add_argument("libraries", nargs="+",
-                        help="List of libraries libc++ depends on")
+    parser.add_argument("--output", help="Path to libc++ linker script", required=True)
+    parser.add_argument(
+        "libraries", nargs="+", help="List of libraries libc++ depends on"
+    )
     args = parser.parse_args()
 
     # Use the relative path for the libc++ library.
     libcxx = os.path.relpath(args.input, os.path.dirname(args.output))
 
     # Prepare the list of public libraries to link.
-    public_libs = ['-l%s' % l for l in args.libraries]
+    public_libs = ["-l%s" % l for l in args.libraries]
 
     # Generate the linker script contents.
-    contents = "INPUT(%s)" % ' '.join([libcxx] + public_libs)
+    contents = "INPUT(%s)" % " ".join([libcxx] + public_libs)
 
     if args.dryrun:
         print("GENERATING SCRIPT: '%s' as file %s" % (contents, args.output))
@@ -48,11 +53,11 @@ def main():
         os.unlink(args.output)
 
     # Replace it with the linker script.
-    with open(args.output, 'w') as f:
+    with open(args.output, "w") as f:
         f.write(contents + "\n")
 
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
