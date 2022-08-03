@@ -123,14 +123,14 @@ class LibcxxTestFormat(object):
 
         test_cxx = copy.deepcopy(self.cxx)
         if is_fail_test:
-            test_cxx.useCCache(False)
-            test_cxx.useWarnings(False)
+            test_cxx.use_c_cache(False)
+            test_cxx.use_warnings(False)
         extra_modules_defines = self._get_parser('MODULES_DEFINES:',
                                                  parsers).getValue()
         if '-fmodules' in test.config.available_features:
             test_cxx.compile_flags += [('-D%s' % mdef.strip()) for
                                        mdef in extra_modules_defines]
-            test_cxx.addWarningFlagIfSupported('-Wno-macro-redefined')
+            test_cxx.add_warning_flag_if_supported('-Wno-macro-redefined')
             # FIXME: libc++ debug tests #define _LIBCUDACXX_ASSERT to override it
             # If we see this we need to build the test against uniquely built
             # modules.
@@ -138,7 +138,7 @@ class LibcxxTestFormat(object):
                 with open(test.getSourcePath(), 'rb') as f:
                     contents = f.read()
                 if b'#define _LIBCUDACXX_ASSERT' in contents:
-                    test_cxx.useModules(False)
+                    test_cxx.use_modules(False)
 
         if is_objcxx_test:
             test_cxx.source_lang = 'objective-c++'
@@ -168,7 +168,7 @@ class LibcxxTestFormat(object):
             assert False
 
     def _clean(self, exec_path):  # pylint: disable=no-self-use
-        libcudacxx.util.cleanFile(exec_path)
+        libcudacxx.util.clean_file(exec_path)
 
     def _evaluate_pass_test(self, test, tmpBase, lit_config,
                             test_cxx, parsers):
@@ -180,12 +180,12 @@ class LibcxxTestFormat(object):
         libcudacxx.util.mkdir_p(os.path.dirname(tmpBase))
         try:
             # Compile the test
-            cmd, out, err, rc = test_cxx.compileLinkTwoSteps(
+            cmd, out, err, rc = test_cxx.compile_link_two_steps(
                 source_path, out=exec_path, object_file=object_path,
                 cwd=execDir)
             compile_cmd = cmd
             if rc != 0:
-                report = libcudacxx.util.makeReport(cmd, out, err, rc)
+                report = libcudacxx.util.make_report(cmd, out, err, rc)
                 report += "Compilation failed unexpectedly!"
                 return lit.Test.Result(lit.Test.FAIL, report)
             # Run the test
@@ -206,7 +206,7 @@ class LibcxxTestFormat(object):
                                                       local_cwd, data_files,
                                                       env)
                 report = "Compiled With: '%s'\n" % ' '.join(compile_cmd)
-                report += libcudacxx.util.makeReport(cmd, out, err, rc)
+                report += libcudacxx.util.make_report(cmd, out, err, rc)
                 if rc == 0:
                     res = lit.Test.PASS if retry_count == 0 else lit.Test.FLAKYPASS
                     return lit.Test.Result(res, report)
@@ -218,7 +218,7 @@ class LibcxxTestFormat(object):
         finally:
             # Note that cleanup of exec_file happens in `_clean()`. If you
             # override this, cleanup is your reponsibility.
-            libcudacxx.util.cleanFile(object_path)
+            libcudacxx.util.clean_file(object_path)
             self._clean(exec_path)
 
     def _evaluate_fail_test(self, test, test_cxx, parsers):
@@ -238,8 +238,8 @@ class LibcxxTestFormat(object):
         if test_cxx.type != 'gcc' and test_cxx.type != 'nvcc':
             test_cxx.flags += ['-fsyntax-only']
         if use_verify:
-            test_cxx.useVerify()
-            test_cxx.useWarnings()
+            test_cxx.use_verify()
+            test_cxx.use_warnings()
             if '-Wuser-defined-warnings' in test_cxx.warning_flags:
                 test_cxx.warning_flags += ['-Wno-error=user-defined-warnings']
         else:
@@ -256,7 +256,7 @@ class LibcxxTestFormat(object):
                 test_cxx.flags += ['-Werror=unused-result']
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
         check_rc = lambda rc: rc == 0 if use_verify else rc != 0
-        report = libcudacxx.util.makeReport(cmd, out, err, rc)
+        report = libcudacxx.util.make_report(cmd, out, err, rc)
         if check_rc(rc):
             return lit.Test.Result(lit.Test.PASS, report)
         else:

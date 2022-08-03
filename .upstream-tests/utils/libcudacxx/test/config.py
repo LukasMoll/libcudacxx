@@ -307,10 +307,10 @@ class Configuration(object):
                            link_flags=link_flags)
 
     def _dump_macros_verbose(self, *args, **kwargs):
-        macros_or_error = self.cxx.dumpMacros(*args, **kwargs)
+        macros_or_error = self.cxx.dump_macros(*args, **kwargs)
         if isinstance(macros_or_error, tuple):
             cmd, out, err, rc = macros_or_error
-            report = libcudacxx.util.makeReport(cmd, out, err, rc)
+            report = libcudacxx.util.make_report(cmd, out, err, rc)
             report += "Compiler failed unexpectedly when dumping macros!"
             self.lit_config.fatal(report)
             return None
@@ -383,7 +383,7 @@ class Configuration(object):
         if self.use_clang_verify is None:
             # NOTE: We do not test for the -verify flag directly because
             #   -verify will always exit with non-zero on an empty file.
-            self.use_clang_verify = self.cxx.isVerifySupported()
+            self.use_clang_verify = self.cxx.is_verify_supported()
             self.lit_config.note(
                 "inferred use_clang_verify as: %r" % self.use_clang_verify)
         if self.use_clang_verify:
@@ -391,7 +391,7 @@ class Configuration(object):
 
     def configure_use_thread_safety(self):
         '''If set, run clang with -verify on failing tests.'''
-        has_thread_safety = self.cxx.hasCompileFlag('-Werror=thread-safety')
+        has_thread_safety = self.cxx.has_compile_flag('-Werror=thread-safety')
         if has_thread_safety:
             self.cxx.compile_flags += ['-Werror=thread-safety']
             self.config.available_features.add('thread-safety')
@@ -490,17 +490,17 @@ class Configuration(object):
 
         # Run a compile test for the -fsized-deallocation flag. This is needed
         # in test/std/language.support/support.dynamic/new.delete
-        if self.cxx.hasCompileFlag('-fsized-deallocation'):
+        if self.cxx.has_compile_flag('-fsized-deallocation'):
             self.config.available_features.add('-fsized-deallocation')
 
-        if self.cxx.hasCompileFlag('-faligned-allocation'):
+        if self.cxx.has_compile_flag('-faligned-allocation'):
             self.config.available_features.add('-faligned-allocation')
         else:
             # FIXME remove this once more than just clang-4.0 support
             # C++17 aligned allocation.
             self.config.available_features.add('no-aligned-allocation')
 
-        if self.cxx.hasCompileFlag('-fdelayed-template-parsing'):
+        if self.cxx.has_compile_flag('-fdelayed-template-parsing'):
             self.config.available_features.add('fdelayed-template-parsing')
 
         if self.get_lit_bool('has_libatomic', False):
@@ -531,7 +531,7 @@ class Configuration(object):
         if 'msvc' not in self.config.available_features:
             # Attempt to detect the glibc version by querying for __GLIBC__
             # in 'features.h'.
-            macros = self.cxx.dumpMacros(flags=['-include', 'features.h'])
+            macros = self.cxx.dump_macros(flags=['-include', 'features.h'])
             if isinstance(macros, dict) and '__GLIBC__' in macros:
                 maj_v, min_v = (macros['__GLIBC__'], macros['__GLIBC_MINOR__'])
                 self.config.available_features.add('glibc')
@@ -546,7 +546,7 @@ class Configuration(object):
         # Support Objective-C++ only on MacOS and if the compiler supports it.
         if self.target_info.platform() == "darwin" and \
            self.target_info.is_host_macosx() and \
-           self.cxx.hasCompileFlag(["-x", "objective-c++", "-fobjc-arc"]):
+           self.cxx.has_compile_flag(["-x", "objective-c++", "-fobjc-arc"]):
             self.config.available_features.add("objective-c++")
 
     def configure_compile_flags(self):
@@ -636,7 +636,7 @@ class Configuration(object):
                     # host compiler supports the dialect, but NVCC doesn't.
 
                     # So, first we need to check if NVCC supports the dialect...
-                    if not self.cxx.hasCompileFlag('-std=%s' % s):
+                    if not self.cxx.has_compile_flag('-std=%s' % s):
                         # If it doesn't, give up on this dialect.
                         success = False
 
@@ -645,10 +645,10 @@ class Configuration(object):
                     cxx = self.host_cxx
 
                 if cxx.type == 'msvc':
-                    if not cxx.hasCompileFlag('/std:%s' % s):
+                    if not cxx.has_compile_flag('/std:%s' % s):
                         success = False
                 else:
-                    if not cxx.hasCompileFlag('-std=%s' % s):
+                    if not cxx.has_compile_flag('-std=%s' % s):
                         success = False
 
                 if success:
@@ -699,7 +699,7 @@ class Configuration(object):
         if self.is_windows and self.debug_build:
             self.cxx.compile_flags += ['-D_DEBUG']
         if self.use_target:
-            if not self.cxx.addFlagIfSupported(
+            if not self.cxx.add_flag_if_supported(
                     ['--target=' + self.config.target_triple]):
                 self.lit_config.warning('use_target is true but --target is '\
                         'not supported by the compiler')
@@ -723,7 +723,7 @@ class Configuration(object):
 
         # FIXME(EricWF): variant_size.pass.cpp requires a slightly larger
         # template depth with older Clang versions.
-        self.cxx.addFlagIfSupported('-ftemplate-depth=270')
+        self.cxx.add_flag_if_supported('-ftemplate-depth=270')
 
     def configure_compile_flags_header_includes(self):
         support_path = os.path.join(self.libcudacxx_src_root, 'test', 'support')
@@ -809,7 +809,7 @@ class Configuration(object):
             if feature_macros[m]:
                 define += '=%s' % (feature_macros[m])
             self.cxx.modules_flags += [define]
-        if self.cxx.hasCompileFlag('-Wno-macro-redefined'):
+        if self.cxx.has_compile_flag('-Wno-macro-redefined'):
             self.cxx.compile_flags += ['-Wno-macro-redefined']
         # Transform each macro name into the feature name used in the tests.
         # Ex. _LIBCUDACXX_HAS_NO_THREADS -> libcpp-has-no-threads
@@ -1052,7 +1052,7 @@ class Configuration(object):
         color_flag = '-fdiagnostics-color=always'
         # Check if the compiler supports the color diagnostics flag. Issue a
         # warning if it does not since color diagnostics have been requested.
-        if not self.cxx.hasCompileFlag(color_flag):
+        if not self.cxx.has_compile_flag(color_flag):
             self.lit_config.warning(
                 'color diagnostics have been requested but are not supported '
                 'by the compiler')
@@ -1074,7 +1074,7 @@ class Configuration(object):
                                   'nvcc'  in self.config.available_features
         enable_warnings = self.get_lit_bool('enable_warnings',
                                             default_enable_warnings)
-        self.cxx.useWarnings(enable_warnings)
+        self.cxx.use_warnings(enable_warnings)
         if 'nvcc' in self.config.available_features:
             self.cxx.warning_flags += [ '-Xcudafe', '--display_error_number' ]
             self.cxx.warning_flags += [ '-Werror', 'all-warnings' ]
@@ -1091,7 +1091,7 @@ class Configuration(object):
             else:
                 # TODO: Re-enable soon.
                 def addIfHostSupports(flag):
-                    if hasattr(self, 'host_cxx') and self.host_cxx.hasWarningFlag(flag):
+                    if hasattr(self, 'host_cxx') and self.host_cxx.has_warning_flag(flag):
                         self.cxx.warning_flags += [ '-Xcompiler', flag ]
 
                 addIfHostSupports('-Wall')
@@ -1117,31 +1117,31 @@ class Configuration(object):
                 '-D_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER',
                 '-Wall', '-Wextra', '-Werror'
             ]
-            if self.cxx.hasWarningFlag('-Wuser-defined-warnings'):
+            if self.cxx.has_warning_flag('-Wuser-defined-warnings'):
                 self.cxx.warning_flags += ['-Wuser-defined-warnings']
                 self.config.available_features.add('diagnose-if-support')
-            self.cxx.addWarningFlagIfSupported('-Wshadow')
-            self.cxx.addWarningFlagIfSupported('-Wno-unused-command-line-argument')
-            self.cxx.addWarningFlagIfSupported('-Wno-attributes')
-            self.cxx.addWarningFlagIfSupported('-Wno-pessimizing-move')
-            self.cxx.addWarningFlagIfSupported('-Wno-c++11-extensions')
-            self.cxx.addWarningFlagIfSupported('-Wno-user-defined-literals')
-            self.cxx.addWarningFlagIfSupported('-Wno-noexcept-type')
-            self.cxx.addWarningFlagIfSupported('-Wno-aligned-allocation-unavailable')
+            self.cxx.add_warning_flag_if_supported('-Wshadow')
+            self.cxx.add_warning_flag_if_supported('-Wno-unused-command-line-argument')
+            self.cxx.add_warning_flag_if_supported('-Wno-attributes')
+            self.cxx.add_warning_flag_if_supported('-Wno-pessimizing-move')
+            self.cxx.add_warning_flag_if_supported('-Wno-c++11-extensions')
+            self.cxx.add_warning_flag_if_supported('-Wno-user-defined-literals')
+            self.cxx.add_warning_flag_if_supported('-Wno-noexcept-type')
+            self.cxx.add_warning_flag_if_supported('-Wno-aligned-allocation-unavailable')
             # These warnings should be enabled in order to support the MSVC
             # team using the test suite; They enable the warnings below and
             # expect the test suite to be clean.
-            self.cxx.addWarningFlagIfSupported('-Wsign-compare')
-            self.cxx.addWarningFlagIfSupported('-Wunused-variable')
-            self.cxx.addWarningFlagIfSupported('-Wunused-parameter')
-            self.cxx.addWarningFlagIfSupported('-Wunreachable-code')
+            self.cxx.add_warning_flag_if_supported('-Wsign-compare')
+            self.cxx.add_warning_flag_if_supported('-Wunused-variable')
+            self.cxx.add_warning_flag_if_supported('-Wunused-parameter')
+            self.cxx.add_warning_flag_if_supported('-Wunreachable-code')
 
         std = self.get_lit_conf('std', None)
         if std in ['c++98', 'c++03']:
             if 'nvcc' not in self.config.available_features:
                 # The '#define static_assert' provided by libc++ in C++03 mode
                 # causes an unused local typedef whenever it is used.
-                self.cxx.addWarningFlagIfSupported('-Wno-unused-local-typedef')
+                self.cxx.add_warning_flag_if_supported('-Wno-unused-local-typedef')
 
     def configure_sanitizer(self):
         san = self.get_lit_conf('use_sanitizer', '').strip()
@@ -1215,7 +1215,7 @@ class Configuration(object):
             self.cxx.compile_flags += ['-O0']
 
     def configure_coroutines(self):
-        if self.cxx.hasCompileFlag('-fcoroutines-ts'):
+        if self.cxx.has_compile_flag('-fcoroutines-ts'):
             macros = self._dump_macros_verbose(flags=['-fcoroutines-ts'])
             if '__cpp_coroutines' not in macros:
                 self.lit_config.warning('-fcoroutines-ts is supported but '
@@ -1229,7 +1229,7 @@ class Configuration(object):
         modules_flags = ['-fmodules']
         if platform.system() != 'Darwin':
             modules_flags += ['-Xclang', '-fmodules-local-submodule-visibility']
-        supports_modules = self.cxx.hasCompileFlag(modules_flags)
+        supports_modules = self.cxx.has_compile_flag(modules_flags)
         enable_modules = self.get_modules_enabled()
         if enable_modules and not supports_modules:
             self.lit_config.fatal(
@@ -1247,7 +1247,7 @@ class Configuration(object):
             ['-fmodules-cache-path=' + module_cache]
         if enable_modules:
             self.config.available_features.add('-fmodules')
-            self.cxx.useModules()
+            self.cxx.use_modules()
 
     def configure_substitutions(self):
         sub = self.config.substitutions
@@ -1264,7 +1264,7 @@ class Configuration(object):
         sub.append(('%compile_flags', compile_flags_str))
         sub.append(('%link_flags', link_flags_str))
         sub.append(('%all_flags', all_flags))
-        if self.cxx.isVerifySupported():
+        if self.cxx.is_verify_supported():
             verify_str = ' ' + ' '.join(self.cxx.verify_flags) + ' '
             sub.append(('%verify', verify_str))
         # Add compile and link shortcuts
@@ -1326,7 +1326,7 @@ class Configuration(object):
         # under test.
         if not self.config.target_triple:
             target_triple = (self.cxx if self.cxx.type != 'nvcc' else
-                             self.host_cxx).getTriple()
+                             self.host_cxx).get_triple()
             # Drop sub-major version components from the triple, because the
             # current XFAIL handling expects exact matches for feature checks.
             # Example: x86_64-apple-darwin14.0.0 -> x86_64-apple-darwin14
@@ -1365,7 +1365,7 @@ class Configuration(object):
         arch = self.get_lit_conf('arch')
         if not arch:
             arch = (self.cxx if self.cxx.type != 'nvcc' else
-                    self.host_cxx).getTriple().split('-', 1)[0]
+                    self.host_cxx).get_triple().split('-', 1)[0]
             self.lit_config.note("inferred arch as: %r" % arch)
 
         inferred_platform, name, version = self.target_info.get_platform()

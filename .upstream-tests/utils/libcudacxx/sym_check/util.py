@@ -66,7 +66,7 @@ _cppfilt_exe = distutils.spawn.find_executable('c++filt')
 def demangle_symbol(symbol):
     if _cppfilt_exe is None:
         return symbol
-    out, _, exit_code = libcudacxx.util.executeCommandVerbose(
+    out, _, exit_code = libcudacxx.util.execute_command_verbose(
         [_cppfilt_exe], input=symbol)
     if exit_code != 0:
         return symbol

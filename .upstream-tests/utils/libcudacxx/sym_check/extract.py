@@ -51,7 +51,7 @@ class NMExtractor(object):
         parsed symbols.
         """
         cmd = [self.nm_exe] + self.flags + [lib]
-        out, _, exit_code = libcudacxx.util.executeCommandVerbose(cmd)
+        out, _, exit_code = libcudacxx.util.execute_command_verbose(cmd)
         if exit_code != 0:
             raise RuntimeError('Failed to run %s on %s' % (self.nm_exe, lib))
         fmt_syms = (self._extract_sym(l)
@@ -139,7 +139,7 @@ class ReadElfExtractor(object):
         parsed symbols.
         """
         cmd = [self.tool] + self.flags + [lib]
-        out, _, exit_code = libcudacxx.util.executeCommandVerbose(cmd)
+        out, _, exit_code = libcudacxx.util.execute_command_verbose(cmd)
         if exit_code != 0:
             raise RuntimeError('Failed to run %s on %s' % (self.nm_exe, lib))
         dyn_syms = self.get_dynsym_table(out)

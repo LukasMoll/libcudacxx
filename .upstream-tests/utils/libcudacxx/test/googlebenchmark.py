@@ -100,7 +100,7 @@ class GoogleBenchmark(TestFormat):
             return lit.Test.PASS, ''
 
         try:
-            out, err, exitCode = lit.util.executeCommand(
+            out, err, exitCode = lit.util.execute_command(
                 cmd, env=test.config.environment,
                 timeout=litConfig.maxIndividualTestTime)
         except lit.util.ExecuteCommandTimeoutException:
