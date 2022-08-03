@@ -1,10 +1,10 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 """GDB pretty-printers for libc++.
 
 These should work for objects compiled when _LIBCUDACXX_ABI_UNSTABLE is defined
@@ -24,10 +24,10 @@ import gdb
 
 _void_pointer_type = gdb.lookup_type("void").pointer()
 
-
 _long_int_type = gdb.lookup_type("unsigned long long")
 
 _libcpp_big_endian = False
+
 
 def addr_as_long(addr):
     return int(addr.cast(_long_int_type))
@@ -142,7 +142,7 @@ class StdTuplePrinter(object):
             field_name = self.child_iter.next()
             child = self.val["__base_"][field_name]["__value_"]
             self.count += 1
-            return ("[%d]" % self.count, child)
+            return "[%d]" % self.count, child
 
     def __init__(self, val):
         self.val = val
@@ -278,6 +278,7 @@ class StdSharedPointerPrinter(object):
         if not self.addr:
             return "%s is nullptr" % typename
         refcount = self.val["__cntrl_"]
+        state = "undefined"
         if refcount != 0:
             usecount = refcount["__shared_owners_"] + 1
             weakcount = refcount["__shared_weak_owners_"]
@@ -326,7 +327,7 @@ class StdVectorPrinter(object):
             if self.offset >= self.bits_per_word:
                 self.item += 1
                 self.offset = 0
-            return ("[%d]" % self.count, outbit)
+            return "[%d]" % self.count, outbit
 
     class _VectorIterator(object):
         """Class to iterate over the non-bool vector's children."""
@@ -345,7 +346,7 @@ class StdVectorPrinter(object):
                 raise StopIteration
             entry = self.item.dereference()
             self.item += 1
-            return ("[%d]" % self.count, entry)
+            return "[%d]" % self.count, entry
 
     def __init__(self, val):
         """Set val, length, capacity, and iterator for bool and normal vectors."""
@@ -409,7 +410,7 @@ class StdBitsetPrinter(object):
             current = self.values[word_index]
             if current:
                 for n in self._byte_it(current):
-                    yield ("[%d]" % (word_index * self.bits_per_word + n), 1)
+                    yield "[%d]" % (word_index * self.bits_per_word + n), 1
 
     def __iter__(self):
         return self._list_it()
@@ -452,7 +453,7 @@ class StdDequePrinter(object):
                 yield "", elem
             num_emitted += end_index - start_index
             current_addr = gdb.Value(addr_as_long(current_addr) + _pointer_size) \
-                              .cast(self.node_type)
+                .cast(self.node_type)
             start_index = 0
 
     def to_string(self):

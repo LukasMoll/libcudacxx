@@ -1,10 +1,10 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 """Commands used to automate testing gdb pretty printers.
 
 This script is part of a larger framework to test gdb pretty printers. It
@@ -27,7 +27,7 @@ class CheckResult(gdb.Command):
         super(CheckResult, self).__init__(
             "print_and_compare", gdb.COMMAND_DATA)
 
-    def invoke(self, arg, from_tty):
+    def invoke(self):
         try:
             # Stack frame is:
             # 0. StopForDebugger
@@ -68,6 +68,7 @@ class CheckResult(gdb.Command):
                       ":" + str(test_loc.line))
 
         except RuntimeError as e:
+            global test_failures
             # At this point, lots of different things could be wrong, so don't try to
             # recover or figure it out. Don't exit either, because then it's
             # impossible debug the framework itself.
@@ -85,7 +86,7 @@ class CheckResult(gdb.Command):
         return gdb.execute("p " + clean_expression_str, to_string=True)
 
 
-def exit_handler(event=None):
+def exit_handler():
     global test_failures
     if test_failures:
         print("FAILED %d cases" % test_failures)
@@ -109,4 +110,4 @@ gdb.execute("run")
 # If the program didn't exit, something went wrong, but we don't
 # know what. Fail on exit.
 test_failures += 1
-exit_handler(None)
+exit_handler()

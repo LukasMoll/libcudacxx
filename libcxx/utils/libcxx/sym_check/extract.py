@@ -1,23 +1,23 @@
 # -*- Python -*- vim: set syntax=python tabstop=4 expandtab cc=80:
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 """
 extract - A set of function that extract symbol lists from shared libraries.
 """
 import distutils.spawn
 import os.path
 import sys
-import re
 
 import libcxx.util
 from libcxx.sym_check import util
 
 extract_ignore_names = ['_init', '_fini']
+
 
 class NMExtractor(object):
     """
@@ -44,14 +44,13 @@ class NMExtractor(object):
         self.static_lib = static_lib
         self.flags = ['-P', '-g']
 
-
     def extract(self, lib):
         """
         Extract symbols from a library and return the results as a dict of
         parsed symbols.
         """
         cmd = [self.nm_exe] + self.flags + [lib]
-        out, _, exit_code = libcxx.util.executeCommandVerbose(cmd)
+        out, _, exit_code = libcxx.util.execute_command_verbose(cmd)
         if exit_code != 0:
             raise RuntimeError('Failed to run %s on %s' % (self.nm_exe, lib))
         fmt_syms = (self._extract_sym(l)
@@ -107,6 +106,7 @@ class NMExtractor(object):
             sym['type'] = 'OBJECT'
         return sym
 
+
 class ReadElfExtractor(object):
     """
     ReadElfExtractor - Extract symbol lists from libraries using readelf.
@@ -139,7 +139,7 @@ class ReadElfExtractor(object):
         parsed symbols.
         """
         cmd = [self.tool] + self.flags + [lib]
-        out, _, exit_code = libcxx.util.executeCommandVerbose(cmd)
+        out, _, exit_code = libcxx.util.execute_command_verbose(cmd)
         if exit_code != 0:
             raise RuntimeError('Failed to run %s on %s' % (self.nm_exe, lib))
         dyn_syms = self.get_dynsym_table(out)

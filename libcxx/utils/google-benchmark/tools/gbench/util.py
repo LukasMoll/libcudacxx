@@ -138,10 +138,10 @@ def run_benchmark(exe_name, benchmark_flags):
 
     cmd = [exe_name] + benchmark_flags
     print("RUNNING: %s" % ' '.join(cmd))
-    exitCode = subprocess.call(cmd)
-    if exitCode != 0:
+    exit_code = subprocess.call(cmd)
+    if exit_code != 0:
         print('TEST FAILED...')
-        sys.exit(exitCode)
+        sys.exit(exit_code)
     json_res = load_benchmark_results(output_name)
     if is_temp_output:
         os.unlink(output_name)

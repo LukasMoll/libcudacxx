@@ -24,38 +24,47 @@ try:
 except ImportError:
     import urlparse as parse
 
+
 class EmptyLogger(object):
-    '''
+    """
     Provides an implementation that performs no logging
-    '''
+    """
+
     def debug(self, *k, **kw):
         pass
+
     def info(self, *k, **kw):
         pass
+
     def warn(self, *k, **kw):
         pass
+
     def error(self, *k, **kw):
         pass
+
     def critical(self, *k, **kw):
         pass
-    def setLevel(self, *k, **kw):
+
+    def set_level(self, *k, **kw):
         pass
+
 
 urls = (
     'http://downloads.sourceforge.net/project/mingw-w64/Toolchains%20'
-        'targetting%20Win32/Personal%20Builds/mingw-builds/installer/'
-        'repository.txt',
+    'targetting%20Win32/Personal%20Builds/mingw-builds/installer/'
+    'repository.txt',
     'http://downloads.sourceforge.net/project/mingwbuilds/host-windows/'
-        'repository.txt'
+    'repository.txt'
 )
 '''
 A list of mingw-build repositories
 '''
 
-def repository(urls = urls, log = EmptyLogger()):
-    '''
+
+def repository(urls=urls, log=EmptyLogger()):
+    """
     Downloads and parse mingw-build repository files and parses them
-    '''
+    """
     log.info('getting mingw-builds repository')
     versions = {}
     re_sourceforge = re.compile(r'http://sourceforge.net/projects/([^/]+)/files')
@@ -65,7 +74,7 @@ def repository(urls = urls, log = EmptyLogger()):
         socket = request.urlopen(url)
         repo = socket.read()
         if not isinstance(repo, str):
-            repo = repo.decode();
+            repo = repo.decode()
         socket.close()
         for entry in repo.split('\n')[:-1]:
             value = entry.split('|')
@@ -79,27 +88,29 @@ def repository(urls = urls, log = EmptyLogger()):
             arch = version.setdefault(arch, {})
             threading = arch.setdefault(value[2].strip(), {})
             exceptions = threading.setdefault(value[3].strip(), {})
-            revision = exceptions.setdefault(int(value[4].strip()[3:]),
-                re_sourceforge.sub(re_sub, value[5].strip()))
+            exceptions.setdefault(int(value[4].strip()[3:]),
+                                  re_sourceforge.sub(re_sub, value[5].strip()))
     return versions
 
+
 def find_in_path(file, path=None):
-    '''
+    """
     Attempts to find an executable in the path
-    '''
+    """
     if platform.system() == 'Windows':
         file += '.exe'
     if path is None:
         path = os.environ.get('PATH', '')
-    if type(path) is type(''):
+    if isinstance(path, str):
         path = path.split(os.pathsep)
     return list(filter(os.path.exists,
-        map(lambda dir, file=file: os.path.join(dir, file), path)))
+                       map(lambda dir, file=file: os.path.join(dir, file), path)))
 
-def find_7zip(log = EmptyLogger()):
-    '''
+
+def find_7zip(log=EmptyLogger()):
+    """
     Attempts to find 7zip for unpacking the mingw-build archives
-    '''
+    """
     log.info('finding 7zip')
     path = find_in_path('7z')
     if not path:
@@ -109,23 +120,26 @@ def find_7zip(log = EmptyLogger()):
     log.debug('found \'%s\'', path[0])
     return path[0]
 
+
 find_7zip()
 
-def unpack(archive, location, log = EmptyLogger()):
-    '''
+
+def unpack(archive, location, log=EmptyLogger()):
+    """
     Unpacks a mingw-builds archive
-    '''
+    """
     sevenzip = find_7zip(log)
     log.info('unpacking %s', os.path.basename(archive))
     cmd = [sevenzip, 'x', archive, '-o' + location, '-y']
     log.debug(' - %r', cmd)
     with open(os.devnull, 'w') as devnull:
-        subprocess.check_call(cmd, stdout = devnull)
+        subprocess.check_call(cmd, stdout=devnull)
 
-def download(url, location, log = EmptyLogger()):
-    '''
+
+def download(url, location, log=EmptyLogger()):
+    """
     Downloads and unpacks a mingw-builds archive
-    '''
+    """
     log.info('downloading MinGW')
     log.debug(' - url: %s', url)
     log.debug(' - location: %s', location)
@@ -159,7 +173,7 @@ def download(url, location, log = EmptyLogger()):
             if not buf:
                 break
             out.write(buf)
-    unpack(archive, location, log = log)
+    unpack(archive, location, log=log)
     os.remove(archive)
 
     possible = os.path.join(location, 'mingw64')
@@ -169,16 +183,18 @@ def download(url, location, log = EmptyLogger()):
             raise ValueError('Failed to find unpacked MinGW: ' + possible)
     return possible
 
-def root(location = None, arch = None, version = None, threading = None,
-        exceptions = None, revision = None, log = EmptyLogger()):
-    '''
+
+def root(location=None, arch=None, version=None, threading=None,
+         exceptions=None, revision=None, log=EmptyLogger()):
+    """
     Returns the root folder of a specific version of the mingw-builds variant
     of gcc. Will download the compiler if needed
-    '''
+    """
 
+    versions = None
     # Get the repository if we don't have all the information
     if not (arch and version and threading and exceptions and revision):
-        versions = repository(log = log)
+        versions = repository(log=log)
 
     # Determine some defaults
     version = version or max(versions.keys())
@@ -223,11 +239,11 @@ def root(location = None, arch = None, version = None, threading = None,
     # Store each specific revision differently
     slug = '{version}-{arch}-{threading}-{exceptions}-rev{revision}'
     slug = slug.format(
-        version = '.'.join(str(v) for v in version),
-        arch = arch,
-        threading = threading,
-        exceptions = exceptions,
-        revision = revision
+        version='.'.join(str(v) for v in version),
+        arch=arch,
+        threading=threading,
+        exceptions=exceptions,
+        revision=revision
     )
     if arch == 'x86_64':
         root_dir = os.path.join(location, slug, 'mingw64')
@@ -238,17 +254,18 @@ def root(location = None, arch = None, version = None, threading = None,
 
     # Download if needed
     if not os.path.exists(root_dir):
-        downloaded = download(url, os.path.join(location, slug), log = log)
+        downloaded = download(url, os.path.join(location, slug), log=log)
         if downloaded != root_dir:
             raise ValueError('The location of mingw did not match\n%s\n%s'
-                % (downloaded, root_dir))
+                             % (downloaded, root_dir))
 
     return root_dir
 
+
 def str2ver(string):
-    '''
+    """
     Converts a version string into a tuple
-    '''
+    """
     try:
         version = tuple(int(v) for v in string.split('.'))
         if len(version) is not 3:
@@ -258,32 +275,33 @@ def str2ver(string):
             'please provide a three digit version string')
     return version
 
+
 def main():
-    '''
+    """
     Invoked when the script is run directly by the python interpreter
-    '''
+    """
     parser = argparse.ArgumentParser(
-        description = 'Downloads a specific version of MinGW',
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter
+        description='Downloads a specific version of MinGW',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('--location',
-        help = 'the location to download the compiler to',
-        default = os.path.join(tempfile.gettempdir(), 'mingw-builds'))
-    parser.add_argument('--arch', required = True, choices = ['i686', 'x86_64'],
-        help = 'the target MinGW architecture string')
-    parser.add_argument('--version', type = str2ver,
-        help = 'the version of GCC to download')
-    parser.add_argument('--threading', choices = ['posix', 'win32'],
-        help = 'the threading type of the compiler')
-    parser.add_argument('--exceptions', choices = ['sjlj', 'seh', 'dwarf'],
-        help = 'the method to throw exceptions')
+                        help='the location to download the compiler to',
+                        default=os.path.join(tempfile.gettempdir(), 'mingw-builds'))
+    parser.add_argument('--arch', required=True, choices=['i686', 'x86_64'],
+                        help='the target MinGW architecture string')
+    parser.add_argument('--version', type=str2ver,
+                        help='the version of GCC to download')
+    parser.add_argument('--threading', choices=['posix', 'win32'],
+                        help='the threading type of the compiler')
+    parser.add_argument('--exceptions', choices=['sjlj', 'seh', 'dwarf'],
+                        help='the method to throw exceptions')
     parser.add_argument('--revision', type=int,
-        help = 'the revision of the MinGW release')
+                        help='the revision of the MinGW release')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--verbose', action='store_true',
-        help='increase the script output verbosity')
+                       help='increase the script output verbosity')
     group.add_argument('-q', '--quiet', action='store_true',
-        help='only print errors and warning')
+                       help='only print errors and warning')
     args = parser.parse_args()
 
     # Create the logger
@@ -299,19 +317,17 @@ def main():
         logger.setLevel(logging.DEBUG)
 
     # Get MinGW
-    root_dir = root(location = args.location, arch = args.arch,
-        version = args.version, threading = args.threading,
-        exceptions = args.exceptions, revision = args.revision,
-        log = logger)
+    root_dir = root(location=args.location, arch=args.arch,
+                    version=args.version, threading=args.threading,
+                    exceptions=args.exceptions, revision=args.revision,
+                    log=logger)
 
     sys.stdout.write('%s\n' % os.path.join(root_dir, 'bin'))
+
 
 if __name__ == '__main__':
     try:
         main()
-    except IOError as e:
-        sys.stderr.write('IO error: %s\n' % e)
-        sys.exit(1)
     except OSError as e:
         sys.stderr.write('OS error: %s\n' % e)
         sys.exit(1)

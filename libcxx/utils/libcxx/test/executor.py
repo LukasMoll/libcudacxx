@@ -1,15 +1,15 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 
 import platform
 import os
 
-from libcxx.test import tracing
+# from libcxx.test import tracing
 from libcxx.util import executeCommand
 
 
@@ -40,7 +40,7 @@ class LocalExecutor(Executor):
         if work_dir == '.':
             work_dir = os.getcwd()
         out, err, rc = executeCommand(cmd, cwd=work_dir, env=env)
-        return (cmd, out, err, rc)
+        return cmd, out, err, rc
 
 
 class NoopExecutor(Executor):
@@ -48,7 +48,7 @@ class NoopExecutor(Executor):
         super(NoopExecutor, self).__init__()
 
     def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
-        return (cmd, '', '', 0)
+        return cmd, '', '', 0
 
 
 class PrefixExecutor(Executor):
@@ -57,10 +57,10 @@ class PrefixExecutor(Executor):
     Most useful for setting ulimits on commands, or running an emulator like
     qemu and valgrind.
     """
-    def __init__(self, commandPrefix, chain):
+    def __init__(self, command_prefix, chain):
         super(PrefixExecutor, self).__init__()
 
-        self.commandPrefix = commandPrefix
+        self.commandPrefix = command_prefix
         self.chain = chain
 
     def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
@@ -71,17 +71,16 @@ class PrefixExecutor(Executor):
 
 class PostfixExecutor(Executor):
     """Postfix an executor with some args."""
-    def __init__(self, commandPostfix, chain):
+    def __init__(self, command_postfix, chain):
         super(PostfixExecutor, self).__init__()
 
-        self.commandPostfix = commandPostfix
+        self.commandPostfix = command_postfix
         self.chain = chain
 
     def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
         cmd = cmd or [exe_path]
         return self.chain.run(cmd + self.commandPostfix, work_dir, file_deps,
                               env=env)
-
 
 
 class TimeoutExecutor(PrefixExecutor):
@@ -124,7 +123,6 @@ class RemoteExecutor(Executor):
             pass
 
     def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
-        target_exe_path = None
         target_cwd = None
         try:
             target_cwd = self.remote_temp_dir()
@@ -165,10 +163,12 @@ class SSHExecutor(RemoteExecutor):
         self.ssh_command = 'ssh'
 
         # TODO(jroelofs): switch this on some -super-verbose-debug config flag
+        '''
         if False:
             self.local_run = tracing.trace_function(
                 self.local_run, log_calls=True, log_results=True,
                 label='ssh_local')
+        '''
 
     def _remote_temp(self, is_dir):
         # TODO: detect what the target system is, and use the correct
@@ -178,9 +178,9 @@ class SSHExecutor(RemoteExecutor):
         # Not sure how to do suffix on osx yet
         dir_arg = '-d' if is_dir else ''
         cmd = 'mktemp -q {} /tmp/libcxx.XXXXXXXXXX'.format(dir_arg)
-        _, temp_path, err, exitCode = self._execute_command_remote([cmd])
+        _, temp_path, err, exit_code = self._execute_command_remote([cmd])
         temp_path = temp_path.strip()
-        if exitCode != 0:
+        if exit_code != 0:
             raise RuntimeError(err)
         return temp_path
 
@@ -202,4 +202,4 @@ class SSHExecutor(RemoteExecutor):
         if remote_work_dir != '.':
             remote_cmd = 'cd ' + remote_work_dir + ' && ' + remote_cmd
         out, err, rc = self.local_run(ssh_cmd + [remote_cmd])
-        return (remote_cmd, out, err, rc)
+        return remote_cmd, out, err, rc

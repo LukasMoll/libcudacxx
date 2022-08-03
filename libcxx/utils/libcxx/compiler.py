@@ -1,12 +1,11 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 
-import platform
 import os
 import libcxx.util
 
@@ -48,12 +47,12 @@ class CXXCompiler(object):
         self.type = cxx_type
         self.version = cxx_version
         if self.type is None or self.version is None:
-            self._initTypeAndVersion()
+            self._init_type_and_version()
 
-    def isVerifySupported(self):
+    def is_verify_supported(self):
         if self.verify_supported is None:
-            self.verify_supported = self.hasCompileFlag(['-Xclang',
-                                        '-verify-ignore-unexpected'])
+            self.verify_supported = self.has_compile_flag(['-Xclang',
+                                                           '-verify-ignore-unexpected'])
             if self.verify_supported:
                 self.verify_flags = [
                     '-Xclang', '-verify',
@@ -62,93 +61,93 @@ class CXXCompiler(object):
                 ]
         return self.verify_supported
 
-    def useVerify(self, value=True):
+    def use_verify(self, value=True):
         self.use_verify = value
         assert not self.use_verify or self.verify_flags is not None
 
-    def useModules(self, value=True):
+    def use_modules(self, value=True):
         self.use_modules = value
         assert not self.use_modules or self.modules_flags is not None
 
-    def useCCache(self, value=True):
+    def use_c_cache(self, value=True):
         self.use_ccache = value
 
-    def useWarnings(self, value=True):
+    def use_warnings(self, value=True):
         self.use_warnings = value
 
-    def _initTypeAndVersion(self):
+    def _init_type_and_version(self):
         # Get compiler type and version
         try:
-          macros = self.dumpMacros()
-          compiler_type = None
-          major_ver = minor_ver = patchlevel = None
-          self.is_nvrtc = False
+            macros = self.dump_macros()
+            compiler_type = None
+            major_ver = minor_ver = patchlevel = None
+            self.is_nvrtc = False
 
-          if '__NVCC__' in macros.keys():
-              compiler_type = 'nvcc'
-              major_ver = macros['__CUDACC_VER_MAJOR__']
-              minor_ver = macros['__CUDACC_VER_MINOR__']
-              patchlevel = macros['__CUDACC_VER_BUILD__']
-              if '__LIBCUDACXX_NVRTC_TEST__' in macros.keys():
-                self.is_nvrtc = True
-          elif '__PGIC__' in macros.keys():
-              compiler_type = "pgi"
-              # PGI, unfortunately, adds an extra space between the macro name
-              # and macro value in their macro dump mode.
-              major_ver = macros['__PGIC__'].strip()
-              minor_ver = macros['__PGIC_MINOR__'].strip()
-              patchlevel = macros['__PGIC_PATCHLEVEL__'].strip()
-          elif '__INTEL_COMPILER' in macros.keys():
-              compiler_type = "icc"
-              major_ver = int(macros['__INTEL_COMPILER']) / 100
-              minor_ver = (int(macros['__INTEL_COMPILER']) % 100) / 10
-              patchlevel = int(macros['__INTEL_COMPILER']) % 10
-          elif '__clang__' in macros.keys():
-              compiler_type = 'clang'
-              # Treat Apple's LLVM fork differently.
-              if '__apple_build_version__' in macros.keys():
-                  compiler_type = 'apple-clang'
-              major_ver = macros['__clang_major__']
-              minor_ver = macros['__clang_minor__']
-              patchlevel = macros['__clang_patchlevel__']
-          elif '__GNUC__' in macros.keys():
-              compiler_type = 'gcc'
-              major_ver = macros['__GNUC__']
-              minor_ver = macros['__GNUC_MINOR__']
-              patchlevel = macros['__GNUC_PATCHLEVEL__']
+            if '__NVCC__' in macros.keys():
+                compiler_type = 'nvcc'
+                major_ver = macros['__CUDACC_VER_MAJOR__']
+                minor_ver = macros['__CUDACC_VER_MINOR__']
+                patchlevel = macros['__CUDACC_VER_BUILD__']
+                if '__LIBCUDACXX_NVRTC_TEST__' in macros.keys():
+                    self.is_nvrtc = True
+            elif '__PGIC__' in macros.keys():
+                compiler_type = "pgi"
+                # PGI, unfortunately, adds an extra space between the macro name
+                # and macro value in their macro dump mode.
+                major_ver = macros['__PGIC__'].strip()
+                minor_ver = macros['__PGIC_MINOR__'].strip()
+                patchlevel = macros['__PGIC_PATCHLEVEL__'].strip()
+            elif '__INTEL_COMPILER' in macros.keys():
+                compiler_type = "icc"
+                major_ver = int(macros['__INTEL_COMPILER']) / 100
+                minor_ver = (int(macros['__INTEL_COMPILER']) % 100) / 10
+                patchlevel = int(macros['__INTEL_COMPILER']) % 10
+            elif '__clang__' in macros.keys():
+                compiler_type = 'clang'
+                # Treat Apple's LLVM fork differently.
+                if '__apple_build_version__' in macros.keys():
+                    compiler_type = 'apple-clang'
+                major_ver = macros['__clang_major__']
+                minor_ver = macros['__clang_minor__']
+                patchlevel = macros['__clang_patchlevel__']
+            elif '__GNUC__' in macros.keys():
+                compiler_type = 'gcc'
+                major_ver = macros['__GNUC__']
+                minor_ver = macros['__GNUC_MINOR__']
+                patchlevel = macros['__GNUC_PATCHLEVEL__']
 
-          if '__cplusplus' in macros.keys():
-            cplusplus = macros['__cplusplus']
-            if cplusplus[-1] == 'L':
-              cplusplus = cplusplus[:-1]
-            cpp_standard = int(cplusplus)
+            if '__cplusplus' in macros.keys():
+                cplusplus = macros['__cplusplus']
+                if cplusplus[-1] == 'L':
+                    cplusplus = cplusplus[:-1]
+                cpp_standard = int(cplusplus)
 
-            if cpp_standard <= 199711:
-              default_dialect = "c++03"
-            elif cpp_standard <= 201103:
-              default_dialect = "c++11"
-            elif cpp_standard <= 201402:
-              default_dialect = "c++14"
-            elif cpp_standard <= 201703:
-              default_dialect = "c++17"
+                if cpp_standard <= 199711:
+                    default_dialect = "c++03"
+                elif cpp_standard <= 201103:
+                    default_dialect = "c++11"
+                elif cpp_standard <= 201402:
+                    default_dialect = "c++14"
+                elif cpp_standard <= 201703:
+                    default_dialect = "c++17"
+                else:
+                    default_dialect = "c++20"
             else:
-              default_dialect = "c++20"
-          else:
-            default_dialect = "c++03"
+                default_dialect = "c++03"
 
-          self.type = compiler_type
-          self.version = (major_ver, minor_ver, patchlevel)
-          self.default_dialect = default_dialect
-        except:
-          (self.type, self.version, self.default_dialect, self.is_nvrtc) = \
-              self.dumpVersion()
+            self.type = compiler_type
+            self.version = (major_ver, minor_ver, patchlevel)
+            self.default_dialect = default_dialect
+        except Exception:
+            (self.type, self.version, self.default_dialect, self.is_nvrtc) = \
+                self.dump_version()
 
         if self.type == 'nvcc':
             # Treat C++ as CUDA when the compiler is NVCC.
             self.source_lang = 'cu'
 
-    def _basicCmd(self, source_files, out, mode=CM_Default, flags=[],
-                  input_is_cxx=False):
+    def _basic_cmd(self, source_files, out, mode=CM_Default, flags=[],
+                   input_is_cxx=False):
         cmd = []
         if self.use_ccache \
                 and not mode == self.CM_Link \
@@ -184,58 +183,60 @@ class CXXCompiler(object):
         cmd += flags
         return cmd
 
-    def preprocessCmd(self, source_files, out=None, flags=[]):
-        return self._basicCmd(source_files, out, flags=flags,
-                             mode=self.CM_PreProcess,
-                             input_is_cxx=True)
+    def preprocess_cmd(self, source_files, out=None, flags=[]):
+        return self._basic_cmd(source_files, out, flags=flags,
+                               mode=self.CM_PreProcess,
+                               input_is_cxx=True)
 
-    def compileCmd(self, source_files, out=None, flags=[]):
-        return self._basicCmd(source_files, out, flags=flags,
-                             mode=self.CM_Compile,
-                             input_is_cxx=True) + ['-c']
+    def compile_cmd(self, source_files, out=None, flags=[]):
+        return self._basic_cmd(source_files, out, flags=flags,
+                               mode=self.CM_Compile,
+                               input_is_cxx=True) + ['-c']
 
-    def linkCmd(self, source_files, out=None, flags=[]):
-        return self._basicCmd(source_files, out, flags=flags,
-                              mode=self.CM_Link)
+    def link_cmd(self, source_files, out=None, flags=[]):
+        return self._basic_cmd(source_files, out, flags=flags,
+                               mode=self.CM_Link)
 
-    def compileLinkCmd(self, source_files, out=None, flags=[]):
-        return self._basicCmd(source_files, out, flags=flags)
+    def compile_link_cmd(self, source_files, out=None, flags=[]):
+        return self._basic_cmd(source_files, out, flags=flags)
 
     def preprocess(self, source_files, out=None, flags=[], cwd=None):
-        cmd = self.preprocessCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
-                                                  cwd=cwd)
+        cmd = self.preprocess_cmd(source_files, out, flags)
+        out, err, rc = libcxx.util.execute_command(cmd, env=self.compile_env,
+                                                   cwd=cwd)
         return cmd, out, err, rc
 
     def compile(self, source_files, out=None, flags=[], cwd=None):
-        cmd = self.compileCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
-                                                  cwd=cwd)
+        cmd = self.compile_cmd(source_files, out, flags)
+        out, err, rc = libcxx.util.execute_command(cmd, env=self.compile_env,
+                                                   cwd=cwd)
         return cmd, out, err, rc
 
     def link(self, source_files, out=None, flags=[], cwd=None):
-        cmd = self.linkCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
-                                                  cwd=cwd)
+        cmd = self.link_cmd(source_files, out, flags)
+        out, err, rc = libcxx.util.execute_command(cmd, env=self.compile_env,
+                                                   cwd=cwd)
         return cmd, out, err, rc
 
-    def compileLink(self, source_files, out=None, flags=[],
-                    cwd=None):
-        cmd = self.compileLinkCmd(source_files, out, flags)
-        out, err, rc = libcxx.util.executeCommand(cmd, env=self.compile_env,
-                                                  cwd=cwd)
+    def compile_link(self, source_files, out=None, flags=[],
+                     cwd=None):
+        cmd = self.compile_link_cmd(source_files, out, flags)
+        out, err, rc = libcxx.util.execute_command(cmd, env=self.compile_env,
+                                                   cwd=cwd)
         return cmd, out, err, rc
 
-    def compileLinkTwoSteps(self, source_file, out=None, object_file=None,
-                            flags=[], cwd=None):
+    def compile_link_two_steps(self, source_file, out=None, object_file=None,
+                               flags=[], cwd=None):
         if not isinstance(source_file, str):
             raise TypeError('This function only accepts a single input file')
         if object_file is None:
             # Create, use and delete a temporary object file if none is given.
-            with_fn = lambda: libcxx.util.guardedTempFilename(suffix='.o')
+            def with_fn():
+                return libcxx.util.guarded_temp_filename(suffix='.o')
         else:
             # Otherwise wrap the filename in a context manager function.
-            with_fn = lambda: libcxx.util.nullContext(object_file)
+            def with_fn():
+                return libcxx.util.null_context(object_file)
         with with_fn() as object_file:
             cc_cmd, cc_stdout, cc_stderr, rc = self.compile(
                 source_file, object_file, flags=flags, cwd=cwd)
@@ -246,27 +247,30 @@ class CXXCompiler(object):
             return (cc_cmd + ['&&'] + link_cmd, cc_stdout + link_stdout,
                     cc_stderr + link_stderr, rc)
 
-    def dumpVersion(self, flags=[], cwd=None):
+    def dump_version(self, flags=[], cwd=None):
         dumpversion_cpp = os.path.join(
-          os.path.dirname(os.path.abspath(__file__)), "dumpversion.cpp")
-        with_fn = lambda: libcxx.util.guardedTempFilename(suffix=".exe")
+            os.path.dirname(os.path.abspath(__file__)), "dumpversion.cpp")
+
+        def with_fn():
+            return libcxx.util.guarded_temp_filename(suffix=".exe")
+
         with with_fn() as exe:
-          cmd, out, err, rc = self.compileLink([dumpversion_cpp], out=exe,
-                                               flags=flags, cwd=cwd)
-          if rc != 0:
-            return ("unknown", (0, 0, 0), "c++03", False)
-          out, err, rc = libcxx.util.executeCommand(exe, env=self.compile_env,
-                                                    cwd=cwd)
-          version = None
-          try:
-            version = eval(out)
-          except:
-            pass
-          if not (isinstance(version, tuple) and 4 == len(version)):
-            version = ("unknown", (0, 0, 0), "c++03", False)
+            cmd, out, err, rc = self.compile_link([dumpversion_cpp], out=exe,
+                                                  flags=flags, cwd=cwd)
+            if rc != 0:
+                return "unknown", (0, 0, 0), "c++03", False
+            out, err, rc = libcxx.util.execute_command(exe, env=self.compile_env,
+                                                       cwd=cwd)
+            version = None
+            try:
+                version = eval(out)
+            except Exception:
+                pass
+            if not (isinstance(version, tuple) and 4 == len(version)):
+                version = ("unknown", (0, 0, 0), "c++03", False)
         return version
 
-    def dumpMacros(self, source_files=None, flags=[], cwd=None):
+    def dump_macros(self, source_files=None, flags=[], cwd=None):
         if source_files is None:
             source_files = os.devnull
         flags = ['-dM'] + flags
@@ -290,13 +294,13 @@ class CXXCompiler(object):
             parsed_macros[macro] = value
         return parsed_macros
 
-    def getTriple(self):
+    def get_triple(self):
         if self.type == "msvc":
             return "x86_64-pc-windows-msvc"
         cmd = [self.path] + self.flags + ['-dumpmachine']
         return libcxx.util.capture(cmd).strip()
 
-    def hasCompileFlag(self, flag):
+    def has_compile_flag(self, flag):
         if isinstance(flag, list):
             flags = list(flag)
         else:
@@ -315,29 +319,29 @@ class CXXCompiler(object):
             return False
         return rc == 0
 
-    def addFlagIfSupported(self, flag):
+    def add_flag_if_supported(self, flag):
         if isinstance(flag, list):
             flags = list(flag)
         else:
             flags = [flag]
-        if self.hasCompileFlag(flags):
+        if self.has_compile_flag(flags):
             self.flags += flags
             return True
         else:
             return False
 
-    def addCompileFlagIfSupported(self, flag):
+    def add_compile_flag_if_supported(self, flag):
         if isinstance(flag, list):
             flags = list(flag)
         else:
             flags = [flag]
-        if self.hasCompileFlag(flags):
+        if self.has_compile_flag(flags):
             self.compile_flags += flags
             return True
         else:
             return False
 
-    def hasWarningFlag(self, flag):
+    def has_warning_flag(self, flag):
         """
         hasWarningFlag - Test if the compiler supports a given warning flag.
         Unlike addCompileFlagIfSupported, this function detects when
@@ -348,18 +352,18 @@ class CXXCompiler(object):
         assert isinstance(flag, str)
         assert flag.startswith('-W')
         if not flag.startswith('-Wno-'):
-            return self.hasCompileFlag(flag)
+            return self.has_compile_flag(flag)
         flags = ['-Werror', flag]
         old_use_warnings = self.use_warnings
-        self.useWarnings(False)
-        cmd = self.compileCmd('-', os.devnull, flags)
-        self.useWarnings(old_use_warnings)
+        self.use_warnings(False)
+        cmd = self.compile_cmd('-', os.devnull, flags)
+        self.use_warnings(old_use_warnings)
         # Remove '-v' because it will cause the command line invocation
         # to be printed as part of the error output.
         # TODO(EricWF): Are there other flags we need to worry about?
         if '-v' in cmd:
             cmd.remove('-v')
-        out, err, rc = libcxx.util.executeCommand(
+        out, err, rc = libcxx.util.execute_command(
             cmd, input=libcxx.util.to_bytes('#error\n'))
 
         assert rc != 0
@@ -367,8 +371,8 @@ class CXXCompiler(object):
             return False
         return True
 
-    def addWarningFlagIfSupported(self, flag):
-        if self.hasWarningFlag(flag):
+    def add_warning_flag_if_supported(self, flag):
+        if self.has_warning_flag(flag):
             if flag not in self.warning_flags:
                 self.warning_flags += [flag]
             return True

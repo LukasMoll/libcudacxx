@@ -9,6 +9,7 @@ import sys
 import os
 import re
 
+
 def find_used_labels(asm):
     found = set()
     label_re = re.compile("\s*j[a-z]+\s+\.L([a-zA-Z0-9][a-zA-Z0-9_]*)")
@@ -61,6 +62,7 @@ def is_identifier(tk):
             return False
     return True
 
+
 def process_identifiers(l):
     """
     process_identifiers - process all identifiers and modify them to have
@@ -90,10 +92,10 @@ def process_asm(asm):
 
     # TODO: Add more things we want to remove
     discard_regexes = [
-        re.compile("\s+\..*$"), # directive
-        re.compile("\s*#(NO_APP|APP)$"), #inline ASM
-        re.compile("\s*#.*$"), # comment line
-        re.compile("\s*\.globa?l\s*([.a-zA-Z_][a-zA-Z0-9$_.]*)"), #global directive
+        re.compile("\s+\..*$"),  # directive
+        re.compile("\s*#(NO_APP|APP)$"),  # inline ASM
+        re.compile("\s*#.*$"),  # comment line
+        re.compile("\s*\.globa?l\s*([.a-zA-Z_][a-zA-Z0-9$_.]*)"),  # global directive
         re.compile("\s*\.(string|asciz|ascii|[1248]?byte|short|word|long|quad|value|zero)"),
     ]
     keep_regexes = [
@@ -120,6 +122,7 @@ def process_asm(asm):
             new_contents += '\n'
     return new_contents
 
+
 def main():
     parser = ArgumentParser(
         description='generate a stripped assembly file')
@@ -133,9 +136,8 @@ def main():
     input = args.input[0]
     output = args.out[0]
     if not os.path.isfile(input):
-        print(("ERROR: input file '%s' does not exist") % input)
+        print("ERROR: input file '%s' does not exist" % input)
         sys.exit(1)
-    contents = None
     with open(input, 'r') as f:
         contents = f.read()
     new_contents = process_asm(contents)

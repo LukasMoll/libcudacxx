@@ -907,7 +907,6 @@ def make_widths(grid):
 def create_table(grid, indent):
   indent_str = ' '*indent
   col_widths = make_widths(grid)
-  num_cols = len(grid[0])
   result = indent_str + add_divider(col_widths, 2)
   header_flag = 2
   for row_i in xrange(0, len(grid)):
@@ -928,7 +927,7 @@ def add_divider(widths, header_flag):
   else:
     return ' '.join(['-'*w for w in widths]) + '\n'
 
-def pad_cell(s, length, left_align=True):
+def pad_cell(s, length):
   padding = ((length - len(s)) * ' ')
   return s + padding
 

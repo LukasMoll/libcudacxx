@@ -7,9 +7,8 @@ compare.py - versatile benchmark output compare tool
 
 import argparse
 from argparse import ArgumentParser
-import sys
 import gbench
-from gbench import util, report
+from gbench import report
 from gbench.util import *
 
 
@@ -54,14 +53,19 @@ def create_parser():
         dest='utest',
         default=True,
         action="store_false",
-        help="The tool can do a two-tailed Mann-Whitney U test with the null hypothesis that it is equally likely that a randomly selected value from one sample will be less than or greater than a randomly selected value from a second sample.\nWARNING: requires **LARGE** (no less than {}) number of repetitions to be meaningful!\nThe test is being done by default, if at least {} repetitions were done.\nThis option can disable the U Test.".format(report.UTEST_OPTIMAL_REPETITIONS, report.UTEST_MIN_REPETITIONS))
+        help="The tool can do a two-tailed Mann-Whitney U test with the null hypothesis that it is equally likely "
+             "that a randomly selected value from one sample will be less than or greater than a randomly selected "
+             "value from a second sample.\nWARNING: requires **LARGE** (no less than {}) number of repetitions to be "
+             "meaningful!\nThe test is being done by default, if at least {} repetitions were done.\nThis option can "
+             "disable the U Test.".format(report.UTEST_OPTIMAL_REPETITIONS, report.UTEST_MIN_REPETITIONS))
     alpha_default = 0.05
     utest.add_argument(
         "--alpha",
         dest='utest_alpha',
         default=alpha_default,
         type=float,
-        help=("significance level alpha. if the calculated p-value is below this value, then the result is said to be statistically significant and the null hypothesis is rejected.\n(default: %0.4f)") %
+        help=("significance level alpha. if the calculated p-value is below this value, then the result is said to be "
+              "statistically significant and the null hypothesis is rejected.\n(default: %0.4f)") %
         alpha_default)
 
     subparsers = parser.add_subparsers(
@@ -248,13 +252,13 @@ def main():
 class TestParser(unittest.TestCase):
     def setUp(self):
         self.parser = create_parser()
-        testInputs = os.path.join(
+        test_inputs = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
             'gbench',
             'Inputs')
-        self.testInput0 = os.path.join(testInputs, 'test1_run1.json')
-        self.testInput1 = os.path.join(testInputs, 'test1_run2.json')
+        self.testInput0 = os.path.join(test_inputs, 'test1_run1.json')
+        self.testInput1 = os.path.join(test_inputs, 'test1_run2.json')
 
     def test_benchmarks_basic(self):
         parsed = self.parser.parse_args(

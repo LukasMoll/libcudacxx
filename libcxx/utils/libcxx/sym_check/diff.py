@@ -1,11 +1,11 @@
 # -*- Python -*- vim: set syntax=python tabstop=4 expandtab cc=80:
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 """
 diff - A set of functions for diff-ing two symbol lists.
 """
@@ -41,7 +41,7 @@ def changed_symbols(old, new):
         if old_sym in new:
             continue
         new_sym = _find_by_key(new, old_sym['name'])
-        if (new_sym is not None and not new_sym in old
+        if (new_sym is not None and new_sym not in old
                 and old_sym != new_sym):
             changed += [(old_sym, new_sym)]
     return changed
@@ -97,6 +97,5 @@ def report_diff(added_syms, removed_syms, changed_syms, names_only=False,
             report += 'ABI BREAKAGE: SYMBOLS ADDED OR REMOVED!'
     else:
         report += 'Symbols match.'
-    is_different = abi_break or bool(len(added_syms)) \
-                   or bool(len(changed_syms))
+    is_different = abi_break or bool(len(added_syms)) or bool(len(changed_syms))
     return report, abi_break, is_different

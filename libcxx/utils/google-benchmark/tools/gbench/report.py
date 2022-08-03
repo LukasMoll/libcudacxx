@@ -84,8 +84,7 @@ def filter_benchmark(json_orig, family, replacement=""):
     Apply a filter to the json, and only leave the 'family' of benchmarks.
     """
     regex = re.compile(family)
-    filtered = {}
-    filtered['benchmarks'] = []
+    filtered = {'benchmarks': []}
     for be in json_orig['benchmarks']:
         if not regex.search(be['name']):
             continue
@@ -202,12 +201,6 @@ def generate_difference_report(
     assert utest is True or utest is False
     first_col_width = find_longest_name(json1['benchmarks'])
 
-    def find_test(name):
-        for b in json2['benchmarks']:
-            if b['name'] == name:
-                return b
-        return None
-
     first_col_width = max(
         first_col_width,
         len('Benchmark'))
@@ -274,12 +267,12 @@ def generate_difference_report(
 class TestGetUniqueBenchmarkNames(unittest.TestCase):
     def load_results(self):
         import json
-        testInputs = os.path.join(
+        test_inputs = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
             'Inputs')
-        testOutput = os.path.join(testInputs, 'test3_run0.json')
-        with open(testOutput, 'r') as f:
+        test_output = os.path.join(test_inputs, 'test3_run0.json')
+        with open(test_output, 'r') as f:
             json = json.load(f)
         return json
 
@@ -302,15 +295,15 @@ class TestGetUniqueBenchmarkNames(unittest.TestCase):
 class TestReportDifference(unittest.TestCase):
     def load_results(self):
         import json
-        testInputs = os.path.join(
+        test_inputs = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
             'Inputs')
-        testOutput1 = os.path.join(testInputs, 'test1_run1.json')
-        testOutput2 = os.path.join(testInputs, 'test1_run2.json')
-        with open(testOutput1, 'r') as f:
+        test_output1 = os.path.join(test_inputs, 'test1_run1.json')
+        test_output2 = os.path.join(test_inputs, 'test1_run2.json')
+        with open(test_output1, 'r') as f:
             json1 = json.load(f)
-        with open(testOutput2, 'r') as f:
+        with open(test_output2, 'r') as f:
             json2 = json.load(f)
         return json1, json2
 
@@ -348,12 +341,12 @@ class TestReportDifference(unittest.TestCase):
 class TestReportDifferenceBetweenFamilies(unittest.TestCase):
     def load_result(self):
         import json
-        testInputs = os.path.join(
+        test_inputs = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
             'Inputs')
-        testOutput = os.path.join(testInputs, 'test2_run.json')
-        with open(testOutput, 'r') as f:
+        test_output = os.path.join(test_inputs, 'test2_run.json')
+        with open(test_output, 'r') as f:
             json = json.load(f)
         return json
 
@@ -382,20 +375,19 @@ class TestReportDifferenceBetweenFamilies(unittest.TestCase):
 class TestReportDifferenceWithUTest(unittest.TestCase):
     def load_results(self):
         import json
-        testInputs = os.path.join(
+        test_inputs = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
             'Inputs')
-        testOutput1 = os.path.join(testInputs, 'test3_run0.json')
-        testOutput2 = os.path.join(testInputs, 'test3_run1.json')
-        with open(testOutput1, 'r') as f:
+        test_output1 = os.path.join(test_inputs, 'test3_run0.json')
+        test_output2 = os.path.join(test_inputs, 'test3_run1.json')
+        with open(test_output1, 'r') as f:
             json1 = json.load(f)
-        with open(testOutput2, 'r') as f:
+        with open(test_output2, 'r') as f:
             json2 = json.load(f)
         return json1, json2
 
     def test_utest(self):
-        expect_lines = []
         expect_lines = [
             ['BM_One', '-0.1000', '+0.1000', '10', '9', '100', '110'],
             ['BM_Two', '+0.1111', '-0.0111', '9', '10', '90', '89'],
@@ -450,20 +442,19 @@ class TestReportDifferenceWithUTestWhileDisplayingAggregatesOnly(
         unittest.TestCase):
     def load_results(self):
         import json
-        testInputs = os.path.join(
+        test_inputs = os.path.join(
             os.path.dirname(
                 os.path.realpath(__file__)),
             'Inputs')
-        testOutput1 = os.path.join(testInputs, 'test3_run0.json')
-        testOutput2 = os.path.join(testInputs, 'test3_run1.json')
-        with open(testOutput1, 'r') as f:
+        test_output1 = os.path.join(test_inputs, 'test3_run0.json')
+        test_output2 = os.path.join(test_inputs, 'test3_run1.json')
+        with open(test_output1, 'r') as f:
             json1 = json.load(f)
-        with open(testOutput2, 'r') as f:
+        with open(test_output2, 'r') as f:
             json2 = json.load(f)
         return json1, json2
 
     def test_utest(self):
-        expect_lines = []
         expect_lines = [
             ['BM_One', '-0.1000', '+0.1000', '10', '9', '100', '110'],
             ['BM_Two', '+0.1111', '-0.0111', '9', '10', '90', '89'],

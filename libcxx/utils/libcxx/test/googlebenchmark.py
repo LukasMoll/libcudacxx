@@ -10,6 +10,7 @@ from lit.formats.base import TestFormat
 
 kIsWindows = sys.platform in ['win32', 'cygwin']
 
+
 class GoogleBenchmark(TestFormat):
     def __init__(self, test_sub_dirs, test_suffix, benchmark_args=[]):
         self.benchmark_args = list(benchmark_args)
@@ -23,15 +24,15 @@ class GoogleBenchmark(TestFormat):
         # Also check for .py files for testing purposes.
         self.test_suffixes = {exe_suffix, test_suffix + '.py'}
 
-    def getBenchmarkTests(self, path, litConfig, localConfig):
+    def get_benchmark_tests(self, path, lit_config, local_config):
         """getBenchmarkTests(path) - [name]
 
         Return the tests available in gtest executable.
 
         Args:
           path: String path to a gtest executable
-          litConfig: LitConfig instance
-          localConfig: TestingConfig instance"""
+          lit_config: LitConfig instance
+          local_config: TestingConfig instance"""
 
         # TODO: allow splitting tests according to the "benchmark family" so
         # the output for a single family of tests all belongs to the same test
@@ -39,9 +40,9 @@ class GoogleBenchmark(TestFormat):
         list_test_cmd = [path, '--benchmark_list_tests']
         try:
             output = subprocess.check_output(list_test_cmd,
-                                             env=localConfig.environment)
+                                             env=local_config.environment)
         except subprocess.CalledProcessError as exc:
-            litConfig.warning(
+            lit_config.warning(
                 "unable to discover google-benchmarks in %r: %s. Process output: %s"
                 % (path, sys.exc_info()[1], exc.output))
             raise StopIteration
@@ -53,12 +54,12 @@ class GoogleBenchmark(TestFormat):
                 continue
 
             index = 0
-            while ln[index*2:index*2+2] == '  ':
+            while ln[index * 2:index * 2 + 2] == '  ':
                 index += 1
             while len(nested_tests) > index:
                 nested_tests.pop()
 
-            ln = ln[index*2:]
+            ln = ln[index * 2:]
             if ln.endswith('.'):
                 nested_tests.append(ln)
             elif any([name.startswith('DISABLED_')
@@ -69,9 +70,9 @@ class GoogleBenchmark(TestFormat):
             else:
                 yield ''.join(nested_tests) + ln
 
-    def getTestsInDirectory(self, testSuite, path_in_suite,
-                            litConfig, localConfig):
-        source_path = testSuite.getSourcePath(path_in_suite)
+    def get_tests_in_directory(self, test_suite, path_in_suite,
+                               lit_config, local_config):
+        source_path = test_suite.getSourcePath(path_in_suite)
         for subdir in self.test_sub_dirs:
             dir_path = os.path.join(source_path, subdir)
             if not os.path.isdir(dir_path):
@@ -80,43 +81,42 @@ class GoogleBenchmark(TestFormat):
                                              suffixes=self.test_suffixes):
                 # Discover the tests in this executable.
                 execpath = os.path.join(source_path, subdir, fn)
-                testnames = self.getBenchmarkTests(execpath, litConfig, localConfig)
+                testnames = self.get_benchmark_tests(execpath, lit_config, local_config)
                 for testname in testnames:
-                    testPath = path_in_suite + (subdir, fn, testname)
-                    yield lit.Test.Test(testSuite, testPath, localConfig,
+                    test_path = path_in_suite + (subdir, fn, testname)
+                    yield lit.Test.Test(test_suite, test_path, local_config,
                                         file_path=execpath)
 
-    def execute(self, test, litConfig):
-        testPath,testName = os.path.split(test.getSourcePath())
-        while not os.path.exists(testPath):
+    def execute(self, test, lit_config):
+        test_path, test_name = os.path.split(test.getSourcePath())
+        while not os.path.exists(test_path):
             # Handle GTest parametrized and typed tests, whose name includes
             # some '/'s.
-            testPath, namePrefix = os.path.split(testPath)
-            testName = namePrefix + '/' + testName
+            test_path, name_prefix = os.path.split(test_path)
+            test_name = name_prefix + '/' + test_name
 
-        cmd = [testPath, '--benchmark_filter=%s$' % testName ] + self.benchmark_args
+        cmd = [test_path, '--benchmark_filter=%s$' % test_name] + self.benchmark_args
 
-        if litConfig.noExecute:
+        if lit_config.noExecute:
             return lit.Test.PASS, ''
 
         try:
-            out, err, exitCode = lit.util.executeCommand(
+            out, err, exit_code = lit.util.execute_command(
                 cmd, env=test.config.environment,
-                timeout=litConfig.maxIndividualTestTime)
+                timeout=lit_config.maxIndividualTestTime)
         except lit.util.ExecuteCommandTimeoutException:
             return (lit.Test.TIMEOUT,
                     'Reached timeout of {} seconds'.format(
-                        litConfig.maxIndividualTestTime)
-                   )
+                        lit_config.maxIndividualTestTime)
+                    )
 
-        if exitCode:
-            return lit.Test.FAIL, ('exit code: %d\n' % exitCode) + out + err
+        if exit_code:
+            return lit.Test.FAIL, ('exit code: %d\n' % exit_code) + out + err
 
-        passing_test_line = testName
+        passing_test_line = test_name
         if passing_test_line not in out:
             msg = ('Unable to find %r in google benchmark output:\n\n%s%s' %
                    (passing_test_line, out, err))
             return lit.Test.UNRESOLVED, msg
 
         return lit.Test.PASS, err + out
-

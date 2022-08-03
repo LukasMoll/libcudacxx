@@ -1,10 +1,10 @@
-#===----------------------------------------------------------------------===//
+# ===----------------------------------------------------------------------===//
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===//
+# ===----------------------------------------------------------------------===//
 
 import importlib
 import locale
@@ -15,6 +15,7 @@ import subprocess
 import sys
 
 from libcxx.util import executeCommand
+
 
 class DefaultTargetInfo(object):
     def __init__(self, full_config):
@@ -28,10 +29,15 @@ class DefaultTargetInfo(object):
             "No locales entry for target_system: %s" % self.platform())
 
     def add_cxx_compile_flags(self, flags): pass
+
     def add_cxx_link_flags(self, flags): pass
+
     def configure_env(self, env): pass
+
     def allow_cxxabi_link(self): return True
+
     def add_sanitizer_features(self, sanitizer_type, features): pass
+
     def use_lit_shell_default(self): return False
 
 
@@ -94,7 +100,7 @@ class DarwinLocalTI(DefaultTargetInfo):
 
         if not out:
             self.full_config.lit_config.fatal(
-                    "cannot infer sdk version with: %r" % cmd)
+                "cannot infer sdk version with: %r" % cmd)
 
         return re.sub(r'.*/[^0-9]+([0-9.]+)\.sdk', r'\1', out)
 
@@ -108,7 +114,7 @@ class DarwinLocalTI(DefaultTargetInfo):
             version = None
 
         if version:
-            return (False, name, version)
+            return False, name, version
 
         # Infer the version, either from the SDK or the system itself.  For
         # macosx, ignore the SDK version; what matters is what's at
@@ -117,7 +123,7 @@ class DarwinLocalTI(DefaultTargetInfo):
             version = self.get_macosx_version()
         else:
             version = self.get_sdk_version(name)
-        return (True, name, version)
+        return True, name, version
 
     def add_locale_features(self, features):
         add_common_locales(features, self.full_config.lit_config)
@@ -146,7 +152,7 @@ class DarwinLocalTI(DefaultTargetInfo):
         if self.full_config.cxx_runtime_root:
             library_paths += [self.full_config.cxx_runtime_root]
         elif self.full_config.use_system_cxx_lib:
-            if (os.path.isdir(str(self.full_config.use_system_cxx_lib))):
+            if os.path.isdir(str(self.full_config.use_system_cxx_lib)):
                 library_paths += [self.full_config.use_system_cxx_lib]
 
         # Configure the abi library path
@@ -256,9 +262,14 @@ def make_target_info(full_config):
         full_config.lit_config.note("inferred target_info as: %r" % info_str)
         return target_info
     target_system = platform.system()
-    if target_system == 'Darwin':  return DarwinLocalTI(full_config)
-    if target_system == 'FreeBSD': return FreeBSDLocalTI(full_config)
-    if target_system == 'NetBSD':  return NetBSDLocalTI(full_config)
-    if target_system == 'Linux':   return LinuxLocalTI(full_config)
-    if target_system == 'Windows': return WindowsLocalTI(full_config)
+    if target_system == 'Darwin':
+        return DarwinLocalTI(full_config)
+    if target_system == 'FreeBSD':
+        return FreeBSDLocalTI(full_config)
+    if target_system == 'NetBSD':
+        return NetBSDLocalTI(full_config)
+    if target_system == 'Linux':
+        return LinuxLocalTI(full_config)
+    if target_system == 'Windows':
+        return WindowsLocalTI(full_config)
     return DefaultTargetInfo(full_config)

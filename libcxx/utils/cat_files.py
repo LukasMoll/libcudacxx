@@ -1,18 +1,20 @@
 #!/usr/bin/env python
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 
 from argparse import ArgumentParser
 import sys
 
+
 def print_and_exit(msg):
     sys.stderr.write(msg + '\n')
     sys.exit(1)
+
 
 def main():
     parser = ArgumentParser(
@@ -22,7 +24,7 @@ def main():
         help='The output file. stdout is used if not given',
         type=str, action='store')
     parser.add_argument(
-        'files', metavar='files',  nargs='+',
+        'files', metavar='files', nargs='+',
         help='The files to concatenate')
 
     args = parser.parse_args()

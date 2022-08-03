@@ -1,10 +1,10 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 
 from contextlib import contextmanager
 import errno
@@ -24,21 +24,23 @@ def to_bytes(str):
         return str
     return str.encode('utf-8')
 
+
 def to_string(bytes):
     if isinstance(bytes, str):
         return bytes
     return to_bytes(bytes)
 
+
 def convert_string(bytes):
     try:
         return to_string(bytes.decode('utf-8'))
-    except AttributeError: # 'str' object has no attribute 'decode'.
+    except AttributeError:  # 'str' object has no attribute 'decode'.
         return str(bytes)
     except UnicodeError:
         return str(bytes)
 
 
-def cleanFile(filename):
+def clean_file(filename):
     try:
         os.remove(filename)
     except OSError:
@@ -46,31 +48,31 @@ def cleanFile(filename):
 
 
 @contextmanager
-def guardedTempFilename(suffix='', prefix='', dir=None):
+def guarded_temp_filename(suffix='', prefix='', dir=None):
     # Creates and yeilds a temporary filename within a with statement. The file
     # is removed upon scope exit.
     handle, name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir)
     os.close(handle)
     yield name
-    cleanFile(name)
+    clean_file(name)
 
 
 @contextmanager
-def guardedFilename(name):
+def guarded_filename(name):
     # yeilds a filename within a with statement. The file is removed upon scope
     # exit.
     yield name
-    cleanFile(name)
+    clean_file(name)
 
 
 @contextmanager
-def nullContext(value):
+def null_context(value):
     # yeilds a variable within a with statement. No action is taken upon scope
     # exit.
     yield value
 
 
-def makeReport(cmd, out, err, rc):
+def make_report(cmd, out, err, rc):
     report = "Command: %s\n" % cmd
     report += "Exit Code: %d\n" % rc
     if out:
@@ -97,12 +99,12 @@ def capture(args, env=None):
     return out
 
 
-def which(command, paths = None):
+def which(command, paths=None):
     """which(command, [paths]) - Look up the given command in the paths string
     (or the PATH environment variable, if unspecified)."""
 
     if paths is None:
-        paths = os.environ.get('PATH','')
+        paths = os.environ.get('PATH', '')
 
     # Check for absolute match first.
     if os.path.isfile(command):
@@ -129,18 +131,19 @@ def which(command, paths = None):
     return None
 
 
-def checkToolsPath(dir, tools):
+def check_tools_path(dir, tools):
     for tool in tools:
         if not os.path.exists(os.path.join(dir, tool)):
             return False
     return True
 
 
-def whichTools(tools, paths):
+def which_tools(tools, paths):
     for path in paths.split(os.pathsep):
-        if checkToolsPath(path, tools):
+        if check_tools_path(path, tools):
             return path
     return None
+
 
 def mkdir_p(path):
     """mkdir_p(path) - Make the "path" directory, if it does not exist; this
@@ -162,20 +165,23 @@ def mkdir_p(path):
 
 
 class ExecuteCommandTimeoutException(Exception):
-    def __init__(self, msg, out, err, exitCode):
+    def __init__(self, msg, out, err, exit_code):
         assert isinstance(msg, str)
         assert isinstance(out, str)
         assert isinstance(err, str)
-        assert isinstance(exitCode, int)
+        assert isinstance(exit_code, int)
         self.msg = msg
         self.out = out
         self.err = err
-        self.exitCode = exitCode
+        self.exitCode = exit_code
+
 
 # Close extra file handles on UNIX (on Windows this cannot be done while
 # also redirecting input).
 kUseCloseFDs = not (platform.system() == 'Windows')
-def executeCommand(command, cwd=None, env=None, input=None, timeout=0):
+
+
+def execute_command(command, cwd=None, env=None, input=None, timeout=0):
     """
         Execute command ``command`` (list of arguments or string)
         with
@@ -186,10 +192,10 @@ def executeCommand(command, cwd=None, env=None, input=None, timeout=0):
           no input.
         * Max execution time ``timeout`` (int) seconds. Use 0 for no timeout.
 
-        Returns a tuple (out, err, exitCode) where
+        Returns a tuple (out, err, exit_code) where
         * ``out`` (str) is the standard output of running the command
         * ``err`` (str) is the standard error of running the command
-        * ``exitCode`` (int) is the exitCode of running the command
+        * ``exit_code`` (int) is the exit_code of running the command
 
         If the timeout is hit an ``ExecuteCommandTimeoutException``
         is raised.
@@ -201,48 +207,49 @@ def executeCommand(command, cwd=None, env=None, input=None, timeout=0):
                          stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE,
                          env=env, close_fds=kUseCloseFDs)
-    timerObject = None
+    timer_object = None
     # FIXME: Because of the way nested function scopes work in Python 2.x we
     # need to use a reference to a mutable object rather than a plain
     # bool. In Python 3 we could use the "nonlocal" keyword but we need
     # to support Python 2 as well.
-    hitTimeOut = [False]
+    hit_time_out = [False]
     try:
         if timeout > 0:
-            def killProcess():
+            def kill_process():
                 # We may be invoking a shell so we need to kill the
                 # process and all its children.
-                hitTimeOut[0] = True
-                killProcessAndChildren(p.pid)
+                hit_time_out[0] = True
+                kill_process_and_children(p.pid)
 
-            timerObject = threading.Timer(timeout, killProcess)
-            timerObject.start()
+            timer_object = threading.Timer(timeout, kill_process)
+            timer_object.start()
 
-        out,err = p.communicate(input=input)
-        exitCode = p.wait()
+        out, err = p.communicate(input=input)
+        exit_code = p.wait()
     finally:
-        if timerObject != None:
-            timerObject.cancel()
+        if timer_object != None:
+            timer_object.cancel()
 
     # Ensure the resulting output is always of string type.
     out = convert_string(out)
     err = convert_string(err)
 
-    if hitTimeOut[0]:
+    if hit_time_out[0]:
         raise ExecuteCommandTimeoutException(
             msg='Reached timeout of {} seconds'.format(timeout),
             out=out,
             err=err,
-            exitCode=exitCode
-            )
+            exit_code=exit_code
+        )
 
     # Detect Ctrl-C in subprocess.
-    if exitCode == -signal.SIGINT:
+    if exit_code == -signal.SIGINT:
         raise KeyboardInterrupt
 
-    return out, err, exitCode
+    return out, err, exit_code
 
-def killProcessAndChildren(pid):
+
+def kill_process_and_children(pid):
     """
     This function kills a process with ``pid`` and all its
     running children (recursively). It is currently implemented
@@ -257,31 +264,31 @@ def killProcessAndChildren(pid):
     else:
         import psutil
         try:
-            psutilProc = psutil.Process(pid)
+            psutil_proc = psutil.Process(pid)
             # Handle the different psutil API versions
             try:
                 # psutil >= 2.x
-                children_iterator = psutilProc.children(recursive=True)
+                children_iterator = psutil_proc.children(recursive=True)
             except AttributeError:
                 # psutil 1.x
-                children_iterator = psutilProc.get_children(recursive=True)
+                children_iterator = psutil_proc.get_children(recursive=True)
             for child in children_iterator:
                 try:
                     child.kill()
                 except psutil.NoSuchProcess:
                     pass
-            psutilProc.kill()
+            psutil_proc.kill()
         except psutil.NoSuchProcess:
             pass
 
 
-def executeCommandVerbose(cmd, *args, **kwargs):
+def execute_command_verbose(cmd, *args, **kwargs):
     """
     Execute a command and print its output on failure.
     """
-    out, err, exitCode = executeCommand(cmd, *args, **kwargs)
-    if exitCode != 0:
-        report = makeReport(cmd, out, err, exitCode)
+    out, err, exit_code = execute_command(cmd, *args, **kwargs)
+    if exit_code != 0:
+        report = make_report(cmd, out, err, exit_code)
         report += "\n\nFailed!"
         sys.stderr.write('%s\n' % report)
-    return out, err, exitCode
+    return out, err, exit_code

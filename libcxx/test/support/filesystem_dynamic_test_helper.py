@@ -1,12 +1,12 @@
-import sys
 import os
 import socket
-import stat
+import sys
 
 # Ensure that this is being run on a specific platform
 assert sys.platform.startswith('linux') or sys.platform.startswith('darwin') \
-    or sys.platform.startswith('cygwin') or sys.platform.startswith('freebsd') \
-    or sys.platform.startswith('netbsd')
+       or sys.platform.startswith('cygwin') or sys.platform.startswith('freebsd') \
+       or sys.platform.startswith('netbsd')
+
 
 def env_path():
     ep = os.environ.get('LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT')
@@ -15,7 +15,9 @@ def env_path():
     assert os.path.isdir(ep)
     return ep
 
+
 env_path_global = env_path()
+
 
 # Make sure we don't try and write outside of env_path.
 # All paths used should be sanitized
@@ -25,11 +27,14 @@ def sanitize(p):
         return p
     assert False
 
+
 """
 Some of the tests restrict permissions to induce failures.
 Before we delete the test environment, we have to walk it and re-raise the
 permissions.
 """
+
+
 def clean_recursive(root_p):
     if not os.path.islink(root_p):
         os.chmod(root_p, 0o777)

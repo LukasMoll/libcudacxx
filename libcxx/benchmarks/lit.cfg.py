@@ -3,13 +3,17 @@
 import os
 import site
 
-site.addsitedir(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'utils'))
 from libcxx.test.googlebenchmark import GoogleBenchmark
+
+site.addsitedir(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'utils'))
 
 # Tell pylint that we know config and lit_config exist somewhere.
 if 'PYLINT_IMPORT' in os.environ:
     config = object()
     lit_config = object()
+else:
+    print('ERROR: could not find config')
+    exit()
 
 # name: The name of this test suite.
 config.name = 'libc++ benchmarks'

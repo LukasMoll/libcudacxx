@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 """
 sym_extract - Extract and output a list of symbols from a shared library.
 """
@@ -42,11 +42,16 @@ def main():
     syms = extract.extract_symbols(args.library)
     if args.only_stdlib:
         syms, other_syms = util.filter_stdlib_symbols(syms)
-    filter = lambda x: x
+
+    def filter(x):
+        return x
+
     if args.defined_only:
-      filter = lambda l: list([x for x in l if x['is_defined']])
+        def filter(l):
+            return list([x for x in l if x['is_defined']])
     if args.undefined_only:
-      filter = lambda l: list([x for x in l if not x['is_defined']])
+        def filter(l):
+            return list([x for x in l if not x['is_defined']])
     util.write_syms(syms, out=args.output, names_only=args.names_only, filter=filter)
 
 

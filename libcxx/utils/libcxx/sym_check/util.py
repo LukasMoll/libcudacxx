@@ -1,10 +1,10 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 
 import ast
 import distutils.spawn
@@ -66,7 +66,7 @@ _cppfilt_exe = distutils.spawn.find_executable('c++filt')
 def demangle_symbol(symbol):
     if _cppfilt_exe is None:
         return symbol
-    out, _, exit_code = libcxx.util.executeCommandVerbose(
+    out, _, exit_code = libcxx.util.execute_command_verbose(
         [_cppfilt_exe], input=symbol)
     if exit_code != 0:
         return symbol
@@ -88,7 +88,7 @@ def is_mach_o(filename):
         '\xfe\xed\xfa\xcf',  # MH_MAGIC_64
         '\xcf\xfa\xed\xfe',  # MH_CIGAM_64
         '\xca\xfe\xba\xbe',  # FAT_MAGIC
-        '\xbe\xba\xfe\xca'   # FAT_CIGAM
+        '\xbe\xba\xfe\xca'  # FAT_CIGAM
     ]
 
 
@@ -105,10 +105,12 @@ def extract_or_load(filename):
         return libcxx.sym_check.extract.extract_symbols(filename)
     return read_syms_from_file(filename)
 
+
 def adjust_mangled_name(name):
     if not name.startswith('__Z'):
         return name
     return name[1:]
+
 
 new_delete_std_symbols = [
     '_Znam',
@@ -244,6 +246,7 @@ cxxabi_symbols = [
     '_ZTSy'
 ]
 
+
 def is_stdlib_symbol_name(name, sym):
     name = adjust_mangled_name(name)
     if re.search("@GLIBC|@GCC", name):
@@ -258,6 +261,7 @@ def is_stdlib_symbol_name(name, sym):
     if name.startswith('_Z'):
         return True
     return False
+
 
 def filter_stdlib_symbols(syms):
     stdlib_symbols = []
